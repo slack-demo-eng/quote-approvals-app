@@ -1,0 +1,11 @@
+{
+  "name": "quote-approvals-app",
+  "version": "1.0.0",
+  "description": "Approve quotes directly from Slack",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "georgefairbairn",
+  "license": "ISC"
+}
