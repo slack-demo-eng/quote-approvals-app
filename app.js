@@ -1,6 +1,9 @@
 const { App } = require("@slack/bolt");
 const dotenv = require("dotenv");
 
+// import blocks
+const launch_modal = require("./blocks/modals/launch");
+
 // initialize env variables
 dotenv.config();
 
@@ -11,13 +14,21 @@ const app = new App({
 });
 
 // listen for slash command
-app.command("/discount", async ({ ack }) => {
+app.command("/discount", async ({ ack, command, context }) => {
   await ack();
-  console.log("here");
+  try {
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: command.trigger_id,
+      view: launch_modal,
+    });
+  } catch (error) {
+    console.error(error);
+  }
 });
 
+// start app
 (async () => {
-  // start app
   await app.start(process.env.PORT || 3000);
   console.log("⚡️ Quote Approvals Bot is running!");
 })();
