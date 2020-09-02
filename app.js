@@ -13,6 +13,8 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
+/* LAUNCH */
+
 // listen for slash command
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
@@ -20,6 +22,20 @@ app.command("/discount", async ({ ack, command, context }) => {
     await app.client.views.open({
       token: context.botToken,
       trigger_id: command.trigger_id,
+      view: launch_modal,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// listen for shortcut
+app.shortcut("discount_request", async ({ ack, context, shortcut }) => {
+  await ack();
+  try {
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: shortcut.trigger_id,
       view: launch_modal,
     });
   } catch (error) {
