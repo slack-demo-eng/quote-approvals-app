@@ -5,6 +5,7 @@ const axios = require("axios");
 // import blocks
 const launch_modal = require("./blocks/modals/launch");
 const discount_ephemeral = require("./blocks/messages/ephemeral/discount_mention");
+const launch = require("./blocks/modals/launch");
 
 // initialize env variables
 dotenv.config();
@@ -15,7 +16,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-/* LAUNCH */
+/* LAUNCH 🚀 */
 
 // listen for slash command
 app.command("/discount", async ({ ack, command, context }) => {
@@ -91,8 +92,55 @@ app.action("cancel_ephemeral", async ({ ack, body }) => {
   }
 });
 
+/* NEW CHANNEL ✨ */
+
+let companyName, justification, discount;
+
+// listen for modal submission
+app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
+  try {
+    // gather user input
+    companyName = view.state.values.companyName.user_input.value;
+    justification = view.state.values.justification.user_input.value;
+    discount = view.state.values.discount.user_input.value;
+
+    // validate discount input
+    if (isNaN(discount)) {
+      await ack({
+        response_action: "errors",
+        errors: {
+          discount: "Please enter a number (without a % sign)",
+        },
+      });
+      return;
+    }
+
+    await ack();
+
+    // format new channel name
+    let channelName = companyName.replace(/\W+/g, "-").toLowerCase();
+    if (channelName.slice(-1) === "-")
+      channelName = channelName.substring(0, channelName.length - 1);
+
+    // create channel
+    const response = await app.client.conversations.create({
+      token: context.botToken,
+      name: `quote-approvals-${companyName.replace(/\W+/g, "-").toLowerCase()}`,
+    });
+
+    // add users to new channel
+    await app.client.conversations.invite({
+      token: context.botToken,
+      channel: response.channel.id,
+      users: `${body.user.id},W0168V76LMD,W016NAJDMCM,W016NAJ2Z9B,W0168V90C6B`,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // start app
 (async () => {
-  await app.start(process.env.PORT || 3000);
+  await app.start(process.env.PORT || 4040);
   console.log("⚡️ Quote Approvals Bot is running!");
 })();
