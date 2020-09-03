@@ -1,5 +1,6 @@
 module.exports = {
   type: "modal",
+  callback_id: "launch_modal_submit",
   title: {
     type: "plain_text",
     text: "Quote Approvals Bot",
@@ -18,8 +19,10 @@ module.exports = {
   blocks: [
     {
       type: "input",
+      block_id: "companyName",
       element: {
         type: "plain_text_input",
+        action_id: "user_input",
         placeholder: {
           type: "plain_text",
           text: "Write something",
@@ -27,7 +30,7 @@ module.exports = {
       },
       label: {
         type: "plain_text",
-        text: ":office: Company/Opportunity Name",
+        text: ":star2: Company/Opportunity Name",
         emoji: true,
       },
     },
@@ -43,8 +46,10 @@ module.exports = {
     },
     {
       type: "input",
+      block_id: "justification",
       element: {
         type: "plain_text_input",
+        action_id: "user_input",
         multiline: true,
       },
       label: {
@@ -65,12 +70,15 @@ module.exports = {
     },
     {
       type: "input",
+      block_id: "discount",
       element: {
         type: "plain_text_input",
+        action_id: "user_input",
+        max_length: 2,
       },
       label: {
         type: "plain_text",
-        text: ":dart: Discount (%)",
+        text: ":chart_with_downwards_trend: % Discount",
         emoji: true,
       },
     },
