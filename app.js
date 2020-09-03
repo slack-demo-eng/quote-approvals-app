@@ -5,7 +5,6 @@ const axios = require("axios");
 // import blocks
 const launch_modal = require("./blocks/modals/launch");
 const discount_ephemeral = require("./blocks/messages/ephemeral/discount_mention");
-const launch = require("./blocks/modals/launch");
 
 // initialize env variables
 dotenv.config();
