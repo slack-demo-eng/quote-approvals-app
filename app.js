@@ -91,7 +91,7 @@ app.action("cancel_ephemeral", async ({ ack, body }) => {
   }
 });
 
-/* NEW CHANNEL ✨ */
+/* NEW CHANNEL CREATION ✨ */
 
 let companyName, justification, discount;
 
@@ -124,7 +124,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     // create channel
     const response = await app.client.conversations.create({
       token: context.botToken,
-      name: `quote-approvals-${companyName.replace(/\W+/g, "-").toLowerCase()}`,
+      name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
     });
 
     // add users to new channel
