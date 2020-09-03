@@ -124,7 +124,6 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     // create channel
     const response = await app.client.conversations.create({
       token: context.botToken,
-      name: companyName,
       name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
     });
 
