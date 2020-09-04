@@ -3,9 +3,12 @@ const dotenv = require("dotenv");
 const axios = require("axios");
 
 // import blocks
-const launch_modal = require("./blocks/modals/launch");
-const discount_ephemeral = require("./blocks/messages/ephemeral/discount_mention");
-const channel_exists_message = require("./blocks/messages/regular/channel_exists");
+const { launch_modal } = require("./blocks/modals");
+const {
+  channel_exists,
+  channel_created,
+  discount_mention,
+} = require("./blocks/messages");
 
 // initialize env variables
 dotenv.config();
@@ -138,7 +141,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        blocks: channel_exists_message.channelExists(companyName, channelName),
+        blocks: channel_exists(companyName, channelName),
       });
       return;
     }
@@ -154,6 +157,13 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       token: context.botToken,
       channel: response.channel.id,
       users: `${body.user.id},W0168V76LMD,W016NAJDMCM,W016NAJ2Z9B,W0168V90C6B`,
+    });
+
+    // notify user of new channel
+    await app.client.chat.postMessage({
+      token: context.botToken,
+      channel: body.user.id,
+      blocks: channel_created(companyName, channelName),
     });
   } catch (error) {
     console.error(error);
