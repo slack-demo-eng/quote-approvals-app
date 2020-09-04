@@ -134,7 +134,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     );
 
     if (channelExists) {
-      // company name input error
+      // send DM with channel already exists message
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
