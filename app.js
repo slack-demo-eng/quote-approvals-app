@@ -5,7 +5,7 @@ const axios = require("axios");
 // import blocks
 const launch_modal = require("./blocks/modals/launch");
 const discount_ephemeral = require("./blocks/messages/ephemeral/discount_mention");
-const channel_exists_ephemeral = require("./blocks/messages/ephemeral/channel_exists");
+const channel_exists_message = require("./blocks/messages/regular/channel_exists");
 
 // initialize env variables
 dotenv.config();
@@ -18,14 +18,10 @@ const app = new App({
 
 /* LAUNCH 🚀 */
 
-let launchedFrom;
-
 // listen for slash command
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
   try {
-    launchedFrom = command.channel_id;
-
     // open modal
     await app.client.views.open({
       token: context.botToken,
@@ -139,11 +135,10 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
 
     if (channelExists) {
       // company name input error
-      await app.client.chat.postEphemeral({
+      await app.client.chat.postMessage({
         token: context.botToken,
-        channel: launchedFrom,
-        user: body.user.id,
-        blocks: channel_exists_ephemeral.channelExists(channelName),
+        channel: body.user.id,
+        blocks: channel_exists_message.channelExists(companyName, channelName),
       });
       return;
     }
