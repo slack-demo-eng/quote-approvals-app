@@ -5,6 +5,7 @@ const axios = require("axios");
 // import blocks
 const launch_modal = require("./blocks/modals/launch");
 const discount_ephemeral = require("./blocks/messages/ephemeral/discount_mention");
+const channel_exists_message = require("./blocks/messages/regular/channel_exists");
 
 // initialize env variables
 dotenv.config();
@@ -106,6 +107,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     // validate discount input
     if (isNaN(discount)) {
       await ack({
+        // discount input error
         response_action: "errors",
         errors: {
           discount: "Please enter a number (without a % sign)",
@@ -120,6 +122,26 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     let channelName = companyName.replace(/\W+/g, "-").toLowerCase();
     if (channelName.slice(-1) === "-")
       channelName = channelName.substring(0, channelName.length - 1);
+
+    // retrieve all channels
+    const { channels } = await app.client.conversations.list({
+      token: context.botToken,
+    });
+
+    // check if channel already exists
+    const channelExists = channels.some(
+      (channel) => channel.name === `quote-approvals-${channelName}`
+    );
+
+    if (channelExists) {
+      // send DM with channel already exists message
+      await app.client.chat.postMessage({
+        token: context.botToken,
+        channel: body.user.id,
+        blocks: channel_exists_message.channelExists(companyName, channelName),
+      });
+      return;
+    }
 
     // create channel
     const response = await app.client.conversations.create({
