@@ -2,12 +2,20 @@ const { App } = require("@slack/bolt");
 const dotenv = require("dotenv");
 const axios = require("axios");
 
-// import blocks
-const { launch_modal } = require("./blocks/modals");
+// import modal blocks
+const {
+  launch_modal,
+  approval_details,
+  quote_lines_details,
+  deal_stats,
+} = require("./blocks/modals");
+
+// import message blocks
 const {
   channel_exists,
   channel_created,
   discount_mention,
+  initial_status,
 } = require("./blocks/messages");
 
 // initialize env variables
@@ -132,16 +140,16 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     });
 
     // check if channel already exists
-    const channelExists = channels.some(
+    const existingChannel = channels.find(
       (channel) => channel.name === `quote-approvals-${channelName}`
     );
 
-    if (channelExists) {
+    if (existingChannel) {
       // send DM with channel already exists message
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        blocks: channel_exists(companyName, channelName),
+        blocks: channel_exists(companyName, existingChannel.id),
       });
       return;
     }
@@ -163,7 +171,64 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     await app.client.chat.postMessage({
       token: context.botToken,
       channel: body.user.id,
-      blocks: channel_created(companyName, channelName),
+      blocks: channel_created(companyName, response.channel.id),
+    });
+
+    // post new discount request message to new channel
+    await app.client.chat.postMessage({
+      token: context.botToken,
+      channel: response.channel.id,
+      link_names: true,
+      blocks: initial_status(
+        body.user.username,
+        companyName,
+        justification,
+        discount
+      ),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+/* QUOTE DETAILS 📄 */
+
+// display approval details modal
+app.action("status_details", async ({ ack, context, body }) => {
+  await ack();
+  try {
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: approval_details,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// display quote lines details modal
+app.action("quote_lines_details", async ({ ack, context, body }) => {
+  await ack();
+  try {
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: quote_lines_details,
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// display deal stats modal
+app.action("deal_stats", async ({ ack, context, body }) => {
+  await ack();
+  try {
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: deal_stats,
     });
   } catch (error) {
     console.error(error);
