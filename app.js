@@ -1,4 +1,4 @@
-const { App, LogLevel } = require("@slack/bolt");
+const { App } = require("@slack/bolt");
 const dotenv = require("dotenv");
 const axios = require("axios");
 
@@ -25,7 +25,6 @@ dotenv.config();
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
-  logLevel: "DEBUG",
 });
 
 /* LAUNCH 🚀 */
@@ -106,7 +105,7 @@ app.action("cancel_ephemeral", async ({ ack, body }) => {
 
 /* NEW CHANNEL CREATION ✨ */
 
-var companyName, justification, discount;
+let companyName, justification, discount;
 
 // listen for modal submission
 app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
@@ -150,8 +149,6 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        link_names: 1,
-        parse: "full",
         blocks: channel_exists(companyName, existingChannel.id),
       });
       return;
@@ -174,8 +171,6 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     await app.client.chat.postMessage({
       token: context.botToken,
       channel: body.user.id,
-      link_names: 1,
-      parse: "full",
       blocks: channel_created(companyName, response.channel.id),
     });
 
