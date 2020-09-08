@@ -181,7 +181,6 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     const newMessageResponse = await app.client.chat.postMessage({
       token: context.botToken,
       channel: response.channel.id,
-      link_names: true,
       blocks: initial_status(
         body.user.username,
         companyName,
