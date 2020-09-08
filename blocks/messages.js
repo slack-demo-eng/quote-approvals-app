@@ -1,21 +1,21 @@
 const moment = require("moment");
 
 module.exports = {
-  channel_exists: (companyName, channelId) => [
+  channel_exists: ({ companyName, channelId }) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `:open_mouth: Oops! It looks like a discount approval has *already been requested* for ${companyName}. You can check it out in this channel here :point_right: <#${channelId}>`,
+        text: `Oops! :open_mouth: It looks like a discount approval has *already been requested* for ${companyName}. You can check it out in this channel here :point_right: <#${channelId}>`,
       },
     },
   ],
-  channel_created: (companyName, channelId) => [
+  channel_created: ({ companyName, channelId }) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `:tada: Awesome! You just *started a discount approval process* for ${companyName}. You can watch it play out here :point_right: <#${channelId}>`,
+        text: `Awesome! :tada: You just *started a discount approval process* for ${companyName}. You can watch it play out here :point_right: <#${channelId}>`,
       },
     },
   ],
@@ -53,7 +53,7 @@ module.exports = {
       ],
     },
   ],
-  initial_status: (user, companyName, justification, discount) => [
+  channel_message: ({ user, companyName, justification, discount, status }) => [
     {
       type: "section",
       text: {
@@ -80,7 +80,11 @@ module.exports = {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: ":l1: > :l2: > :sales_ops: > :legal:",
+        text: `${status > 0 ? ":l1_complete:" : ":l1:"} > ${
+          status > 1 ? ":l2_complete:" : ":l2:"
+        } > ${status > 2 ? ":sales_ops_complete:" : ":sales_ops:"} > ${
+          status > 3 ? ":legal_complete:" : ":legal:"
+        }`,
       },
       accessory: {
         type: "button",
@@ -221,7 +225,7 @@ module.exports = {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*Plus plan* x *250* seats with discount \`${discount}%\``,
+        text: `*250* x licenses with \`${discount}%\` discount`,
       },
       accessory: {
         type: "button",
@@ -248,12 +252,12 @@ module.exports = {
       ],
     },
   ],
-  thread_ask: (user, approval_type) => [
+  thread_ask: ({ approver, approval_type }) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `:wave: Hello <@${user}> - please submit your \`${approval_type}\` approval`,
+        text: `:wave: Hello <@${approver}> - please submit your \`${approval_type}\` approval`,
       },
     },
     {
@@ -282,7 +286,7 @@ module.exports = {
       ],
     },
   ],
-  thread_error: (user, action) => [
+  thread_error: ({ user, action }) => [
     {
       type: "section",
       text: {
@@ -291,12 +295,12 @@ module.exports = {
       },
     },
   ],
-  thread_approved: (user, approval_type) => [
+  thread_approved: ({ approver, approval_level }) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `:white_check_mark: <@${user}> approved \`${approval_type}\`.`,
+        text: `:white_check_mark: <@${approver}> approved \`${approval_level}\`.`,
       },
     },
   ],
