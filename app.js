@@ -16,6 +16,9 @@ const {
   channel_created,
   discount_mention,
   initial_status,
+  thread_ask,
+  thread_error,
+  thread_approved,
 } = require("./blocks/messages");
 
 // initialize env variables
@@ -67,7 +70,7 @@ app.message(/discount/i, async ({ context, message }) => {
       token: context.botToken,
       channel: message.channel,
       user: message.user,
-      blocks: discount_ephemeral,
+      blocks: discount_mention,
     });
   } catch (error) {
     console.error(error);
@@ -175,7 +178,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     });
 
     // post new discount request message to new channel
-    await app.client.chat.postMessage({
+    const newMessageResponse = await app.client.chat.postMessage({
       token: context.botToken,
       channel: response.channel.id,
       link_names: true,
@@ -185,6 +188,14 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
         justification,
         discount
       ),
+    });
+
+    // tag L1 approver in thread
+    await app.client.chat.postMessage({
+      token: context.botToken,
+      channel: newMessageResponse.channel,
+      thread_ts: newMessageResponse.message.ts,
+      blocks: thread_ask("W0168V76LMD", "SALES_L1"),
     });
   } catch (error) {
     console.error(error);
@@ -235,8 +246,82 @@ app.action("deal_stats", async ({ ack, context, body }) => {
   }
 });
 
+/* MESSAGE THREAD 🧵 */
+
+// delay wrapper function
+const wait = async (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+// send approval in thread with 3 second delay
+const sendApprovedMessage = async (token, channel, ts, user, approval_type) => {
+  await wait(3000);
+  await app.client.chat.postMessage({
+    token: token,
+    channel: channel,
+    thread_ts: ts,
+    blocks: thread_approved(user, approval_type),
+  });
+};
+
+// listen for 'Approve' or 'Reject' button press in thread
+app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
+  await ack();
+  try {
+    // inform user of authority status
+    await app.client.chat.postEphemeral({
+      token: context.botToken,
+      user: body.user.id,
+      channel: body.channel.id,
+      thread_ts: body.message.thread_ts,
+      blocks: thread_error(body.user.id, action.action_id),
+    });
+
+    await wait(3000);
+
+    // approve L1_SALES
+    await app.client.chat.update({
+      token: context.botToken,
+      channel: body.channel.id,
+      ts: body.message.ts,
+      blocks: thread_approved("W0168V76LMD", "SALES_L1"),
+    });
+
+    // L2 approval
+    await sendApprovedMessage(
+      context.botToken,
+      body.channel.id,
+      body.message.thread_ts,
+      "W016NAJDMCM",
+      "L2_SALES"
+    );
+
+    // SALES_OPS approval
+    await sendApprovedMessage(
+      context.botToken,
+      body.channel.id,
+      body.message.thread_ts,
+      "W016NAJ2Z9B",
+      "SALES_OPS"
+    );
+
+    // LEGAL approval
+    await sendApprovedMessage(
+      context.botToken,
+      body.channel.id,
+      body.message.thread_ts,
+      "W0168V90C6B",
+      "LEGAL"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 // start app
 (async () => {
-  await app.start(process.env.PORT || 4040);
+  await app.start(process.env.PORT || 3000);
   console.log("⚡️ Quote Approvals Bot is running!");
 })();

@@ -248,4 +248,56 @@ module.exports = {
       ],
     },
   ],
+  thread_ask: (user, approval_type) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:wave: Hello <@${user}> - please submit your \`${approval_type}\` approval`,
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            emoji: true,
+            text: "Approve",
+          },
+          style: "primary",
+          action_id: "approve",
+        },
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            emoji: true,
+            text: "Reject",
+          },
+          style: "danger",
+          action_id: "reject",
+        },
+      ],
+    },
+  ],
+  thread_error: (user, action) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:cry: Sorry <@${user}> - you do not have the authority to *${action}* this request`,
+      },
+    },
+  ],
+  thread_approved: (user, approval_type) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:white_check_mark: <@${user}> approved \`${approval_type}\`.`,
+      },
+    },
+  ],
 };
