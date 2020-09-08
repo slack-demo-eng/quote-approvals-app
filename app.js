@@ -15,7 +15,7 @@ const {
   channel_exists,
   channel_created,
   discount_mention,
-  initial_status,
+  channel_message,
   thread_ask,
   thread_error,
   thread_approved,
@@ -152,7 +152,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        blocks: channel_exists(companyName, existingChannel.id),
+        blocks: channel_exists({ companyName, channelId: existingChannel.id }),
       });
       return;
     }
@@ -174,19 +174,20 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     await app.client.chat.postMessage({
       token: context.botToken,
       channel: body.user.id,
-      blocks: channel_created(companyName, response.channel.id),
+      blocks: channel_created({ companyName, channelId: response.channel.id }),
     });
 
     // post new discount request message to new channel
     const newMessageResponse = await app.client.chat.postMessage({
       token: context.botToken,
       channel: response.channel.id,
-      blocks: initial_status(
-        body.user.username,
+      blocks: channel_message({
+        user: body.user.username,
         companyName,
         justification,
-        discount
-      ),
+        discount,
+        status: 0,
+      }),
     });
 
     // tag L1 approver in thread
@@ -194,7 +195,10 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       token: context.botToken,
       channel: newMessageResponse.channel,
       thread_ts: newMessageResponse.message.ts,
-      blocks: thread_ask("W0168V76LMD", "SALES_L1"),
+      blocks: thread_ask({
+        approver: "W0168V76LMD",
+        approval_type: "SALES_L1",
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -255,14 +259,42 @@ const wait = async (ms) => {
 };
 
 // send approval in thread with 3 second delay
-const sendApprovedMessage = async (token, channel, ts, user, approval_type) => {
-  await wait(3000);
-  await app.client.chat.postMessage({
-    token: token,
-    channel: channel,
-    thread_ts: ts,
-    blocks: thread_approved(user, approval_type),
-  });
+const sendApprovedMessage = async ({
+  token,
+  channel,
+  ts,
+  approver,
+  approval_level,
+  status,
+  user,
+}) => {
+  try {
+    await wait(3000);
+
+    // post approval message
+    await app.client.chat.postMessage({
+      token: token,
+      channel: channel,
+      thread_ts: ts,
+      blocks: thread_approved({ approver, approval_level }),
+    });
+
+    // update status of original message
+    await app.client.chat.update({
+      token: token,
+      channel: channel,
+      ts: ts,
+      blocks: channel_message({
+        user,
+        companyName,
+        justification,
+        discount,
+        status,
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 // listen for 'Approve' or 'Reject' button press in thread
@@ -275,7 +307,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       user: body.user.id,
       channel: body.channel.id,
       thread_ts: body.message.thread_ts,
-      blocks: thread_error(body.user.id, action.action_id),
+      blocks: thread_error({ user: body.user.id, action: action.action_id }),
     });
 
     await wait(3000);
@@ -285,35 +317,58 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       token: context.botToken,
       channel: body.channel.id,
       ts: body.message.ts,
-      blocks: thread_approved("W0168V76LMD", "SALES_L1"),
+      blocks: thread_approved({
+        approver: "W0168V76LMD",
+        approval_level: "SALES_L1",
+      }),
+    });
+
+    // update status of original message
+    await app.client.chat.update({
+      token: context.botToken,
+      channel: body.channel.id,
+      ts: body.message.thread_ts,
+      blocks: channel_message({
+        user: body.user.username,
+        companyName,
+        justification,
+        discount,
+        status: 1,
+      }),
     });
 
     // L2 approval
-    await sendApprovedMessage(
-      context.botToken,
-      body.channel.id,
-      body.message.thread_ts,
-      "W016NAJDMCM",
-      "L2_SALES"
-    );
+    await sendApprovedMessage({
+      token: context.botToken,
+      channel: body.channel.id,
+      ts: body.message.thread_ts,
+      approver: "W016NAJDMCM",
+      approval_level: "L2_SALES",
+      status: 2,
+      user: body.user.username,
+    });
 
     // SALES_OPS approval
-    await sendApprovedMessage(
-      context.botToken,
-      body.channel.id,
-      body.message.thread_ts,
-      "W016NAJ2Z9B",
-      "SALES_OPS"
-    );
+    await sendApprovedMessage({
+      token: context.botToken,
+      channel: body.channel.id,
+      ts: body.message.thread_ts,
+      approver: "W016NAJ2Z9B",
+      approval_level: "SALES_OPS",
+      status: 3,
+      user: body.user.username,
+    });
 
     // LEGAL approval
-    await sendApprovedMessage(
-      context.botToken,
-      body.channel.id,
-      body.message.thread_ts,
-      "W0168V90C6B",
-      "LEGAL"
-    );
+    await sendApprovedMessage({
+      token: context.botToken,
+      channel: body.channel.id,
+      ts: body.message.thread_ts,
+      approver: "W0168V90C6B",
+      approval_level: "LEGAL",
+      status: 4,
+      user: body.user.username,
+    });
   } catch (error) {
     console.error(error);
   }
