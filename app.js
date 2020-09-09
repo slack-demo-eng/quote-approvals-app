@@ -44,6 +44,52 @@ const is_approvers_configured = (approver_users) => {
   return true;
 };
 
+// delay wrapper function
+const wait = async (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+// send approval in thread with 3 second delay
+const sendApprovedMessage = async ({
+  token,
+  channel,
+  ts,
+  approver,
+  approval_level,
+  status,
+  user,
+}) => {
+  try {
+    await wait(3000);
+
+    // post approval message
+    await app.client.chat.postMessage({
+      token: token,
+      channel: channel,
+      thread_ts: ts,
+      blocks: thread_approved({ approver, approval_level }),
+    });
+
+    // update status of original message
+    await app.client.chat.update({
+      token: token,
+      channel: channel,
+      ts: ts,
+      blocks: channel_message({
+        user,
+        companyName,
+        justification,
+        discount,
+        status,
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 /* SETTINGS ⚙️ */
 
 // listen for app home tab opened
@@ -371,52 +417,6 @@ app.action("deal_stats", async ({ ack, context, body }) => {
 });
 
 /* MESSAGE THREAD 🧵 */
-
-// delay wrapper function
-const wait = async (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-};
-
-// send approval in thread with 3 second delay
-const sendApprovedMessage = async ({
-  token,
-  channel,
-  ts,
-  approver,
-  approval_level,
-  status,
-  user,
-}) => {
-  try {
-    await wait(3000);
-
-    // post approval message
-    await app.client.chat.postMessage({
-      token: token,
-      channel: channel,
-      thread_ts: ts,
-      blocks: thread_approved({ approver, approval_level }),
-    });
-
-    // update status of original message
-    await app.client.chat.update({
-      token: token,
-      channel: channel,
-      ts: ts,
-      blocks: channel_message({
-        user,
-        companyName,
-        justification,
-        discount,
-        status,
-      }),
-    });
-  } catch (error) {
-    console.error(error);
-  }
-};
 
 // listen for 'Approve' or 'Reject' button press in thread
 app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
