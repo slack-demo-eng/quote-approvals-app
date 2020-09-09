@@ -1,21 +1,128 @@
 const moment = require("moment");
 
 module.exports = {
-  channel_exists: ({ companyName, channelId }) => [
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `Oops! :open_mouth: It looks like a discount approval has *already been requested* for ${companyName}. You can check it out in this channel here :point_right: <#${channelId}>`,
+  app_home: ({ l1_user, l2_user, sales_ops_user, legal_user }) => ({
+    type: "home",
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `Welcome to *Quote Approvals* :wave:`,
+        },
       },
-    },
-  ],
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "Approvers",
+          emoji: true,
+        },
+      },
+      {
+        type: "divider",
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text:
+            "Below you can choose the *approvers* at each level of the approval flow:",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "plain_text",
+          text: " ",
+          emoji: true,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":l1: - `Level 1 Sales`",
+        },
+        accessory: {
+          type: "users_select",
+          placeholder: {
+            type: "plain_text",
+            text: "Select a user",
+            emoji: true,
+          },
+          action_id: "l1_user",
+          initial_user: l1_user || undefined,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":l2: - `Level 2 Sales`",
+        },
+        accessory: {
+          type: "users_select",
+          placeholder: {
+            type: "plain_text",
+            text: "Select a user",
+            emoji: true,
+          },
+          action_id: "l2_user",
+          initial_user: l2_user || undefined,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":sales_ops: - `Sales Ops`",
+        },
+        accessory: {
+          type: "users_select",
+          placeholder: {
+            type: "plain_text",
+            text: "Select a user",
+            emoji: true,
+          },
+          action_id: "sales_ops_user",
+          initial_user: sales_ops_user || undefined,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":legal: - `Legal`",
+        },
+        accessory: {
+          type: "users_select",
+          placeholder: {
+            type: "plain_text",
+            text: "Select a user",
+            emoji: true,
+          },
+          action_id: "legal_user",
+          initial_user: legal_user || undefined,
+        },
+      },
+    ],
+  }),
   channel_created: ({ companyName, channelId }) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
         text: `Awesome! :tada: You just *started a discount approval process* for ${companyName}. You can watch it play out here :point_right: <#${channelId}>`,
+      },
+    },
+  ],
+  channel_exists: ({ companyName, channelId }) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `Oops! :open_mouth: It looks like a discount approval has *already been requested* for ${companyName}. You can check it out in this channel here :point_right: <#${channelId}>`,
       },
     },
   ],
@@ -252,6 +359,39 @@ module.exports = {
       ],
     },
   ],
+  redirect_home: ({ workspace_id, app_id }) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "Uh oh! :grimacing: We seem to be missing some *approvers*...",
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Configure Approvers :gear:",
+            emoji: true,
+          },
+          action_id: "take_me_home",
+          url: `slack://app?team=${workspace_id}&id=${app_id}&tab=home`,
+        },
+      ],
+    },
+  ],
+  thread_approved: ({ approver, approval_level }) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:white_check_mark: <@${approver}> approved \`${approval_level}\`.`,
+      },
+    },
+  ],
   thread_ask: ({ approver, approval_type }) => [
     {
       type: "section",
@@ -292,15 +432,6 @@ module.exports = {
       text: {
         type: "mrkdwn",
         text: `:cry: Sorry <@${user}> - you do not have the authority to *${action}* this request`,
-      },
-    },
-  ],
-  thread_approved: ({ approver, approval_level }) => [
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `:white_check_mark: <@${approver}> approved \`${approval_level}\`.`,
       },
     },
   ],
