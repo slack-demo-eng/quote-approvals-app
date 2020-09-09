@@ -1,6 +1,7 @@
 const { App } = require("@slack/bolt");
 const dotenv = require("dotenv");
 const axios = require("axios");
+const fs = require("fs");
 
 // import modal blocks
 const {
@@ -12,10 +13,12 @@ const {
 
 // import message blocks
 const {
+  app_home,
   channel_exists,
   channel_created,
   discount_mention,
   channel_message,
+  redirect_home,
   thread_ask,
   thread_error,
   thread_approved,
@@ -30,12 +33,129 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
+/* UTILITY FUNCTIONS 🧰 */
+
+// check if approver users exist at each level
+const is_approvers_configured = (approver_users) => {
+  const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
+  if (!l1_user || !l2_user || !sales_ops_user || !legal_user) {
+    return false;
+  }
+  return true;
+};
+
+// delay wrapper function
+const wait = async (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+// send approval in thread with 3 second delay
+const sendApprovedMessage = async ({
+  token,
+  channel,
+  ts,
+  approver,
+  approval_level,
+  status,
+  user,
+}) => {
+  try {
+    await wait(3000);
+
+    // post approval message
+    await app.client.chat.postMessage({
+      token: token,
+      channel: channel,
+      thread_ts: ts,
+      blocks: thread_approved({ approver, approval_level }),
+    });
+
+    // update status of original message
+    await app.client.chat.update({
+      token: token,
+      channel: channel,
+      ts: ts,
+      blocks: channel_message({
+        user,
+        companyName,
+        justification,
+        discount,
+        status,
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+/* SETTINGS ⚙️ */
+
+// listen for app home tab opened
+app.event("app_home_opened", async ({ context, event }) => {
+  try {
+    const approver_users = require("./settings/approver_users.json");
+    await app.client.views.publish({
+      token: context.botToken,
+      user_id: event.user,
+      view: app_home(approver_users),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// listen for change to approvers
+app.action(
+  /^(l1_user|l2_user|sales_ops_user|legal_user).*/,
+  async ({ ack, action }) => {
+    await ack();
+    try {
+      const approver_users_filename = "./settings/approver_users.json";
+      const approver_users = require(approver_users_filename);
+      approver_users[action.action_id] = action.selected_user;
+      fs.writeFile(
+        approver_users_filename,
+        JSON.stringify(approver_users, null, 2),
+        (err) => {
+          if (err) console.error(error);
+        }
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+);
+
+// acknowledge redirect to home clicked
+app.action("take_me_home", async ({ ack }) => {
+  await ack();
+});
+
 /* LAUNCH 🚀 */
 
 // listen for slash command
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
   try {
+    const approver_users = require("./settings/approver_users.json");
+    const users_configured = is_approvers_configured(approver_users);
+
+    // send ephemeral message if approvers not configured
+    if (!users_configured) {
+      await app.client.chat.postEphemeral({
+        token: context.botToken,
+        channel: command.channel_id,
+        user: command.user_id,
+        blocks: redirect_home({
+          workspace_id: command.team_id,
+          app_id: command.api_app_id,
+        }),
+      });
+      return;
+    }
+
     // open modal
     await app.client.views.open({
       token: context.botToken,
@@ -48,9 +168,32 @@ app.command("/discount", async ({ ack, command, context }) => {
 });
 
 // listen for shortcut
-app.shortcut("discount_request", async ({ ack, context, shortcut }) => {
+app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
   await ack();
   try {
+    const approver_users = require("./settings/approver_users.json");
+    const users_configured = is_approvers_configured(approver_users);
+
+    // send DM to user if approvers not configured
+    if (!users_configured) {
+      const {
+        bot: { app_id },
+      } = await app.client.bots.info({
+        token: context.botToken,
+        bot: context.botId,
+      });
+
+      await app.client.chat.postMessage({
+        token: context.botToken,
+        channel: body.user.id,
+        blocks: redirect_home({
+          workspace_id: body.user.team_id,
+          app_id,
+        }),
+      });
+      return;
+    }
+
     // open modal
     await app.client.views.open({
       token: context.botToken,
@@ -63,7 +206,7 @@ app.shortcut("discount_request", async ({ ack, context, shortcut }) => {
 });
 
 // listen for mentions of 'discount'
-app.message(/discount/i, async ({ context, message }) => {
+app.message(/discount/i, async ({ body, context, message }) => {
   try {
     // send ephemaral message
     await app.client.chat.postEphemeral({
@@ -81,6 +224,24 @@ app.message(/discount/i, async ({ context, message }) => {
 app.action("launch_discount", async ({ ack, body, context }) => {
   await ack();
   try {
+    const approver_users = require("./settings/approver_users.json");
+    const users_configured = is_approvers_configured(approver_users);
+
+    // send ephemeral message if approvers not configured
+    if (!users_configured) {
+      await app.client.chat.postEphemeral({
+        token: context.botToken,
+        channel: body.channel.id,
+        user: body.user.id,
+        blocks: redirect_home({
+          workspace_id: body.user.team_id,
+          app_id: body.api_app_id,
+        }),
+      });
+      return;
+    }
+
+    // open modal
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
@@ -163,11 +324,18 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
     });
 
+    const {
+      l1_user,
+      l2_user,
+      sales_ops_user,
+      legal_user,
+    } = require("./settings/approver_users.json");
+
     // add users to new channel
     await app.client.conversations.invite({
       token: context.botToken,
       channel: response.channel.id,
-      users: `${body.user.id},W0168V76LMD,W016NAJDMCM,W016NAJ2Z9B,W0168V90C6B`,
+      users: `${body.user.id},${l1_user},${l2_user},${sales_ops_user},${legal_user}`,
     });
 
     // notify user of new channel
@@ -196,7 +364,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       channel: newMessageResponse.channel,
       thread_ts: newMessageResponse.message.ts,
       blocks: thread_ask({
-        approver: "W0168V76LMD",
+        approver: l1_user,
         approval_type: "SALES_L1",
       }),
     });
@@ -251,52 +419,6 @@ app.action("deal_stats", async ({ ack, context, body }) => {
 
 /* MESSAGE THREAD 🧵 */
 
-// delay wrapper function
-const wait = async (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-};
-
-// send approval in thread with 3 second delay
-const sendApprovedMessage = async ({
-  token,
-  channel,
-  ts,
-  approver,
-  approval_level,
-  status,
-  user,
-}) => {
-  try {
-    await wait(3000);
-
-    // post approval message
-    await app.client.chat.postMessage({
-      token: token,
-      channel: channel,
-      thread_ts: ts,
-      blocks: thread_approved({ approver, approval_level }),
-    });
-
-    // update status of original message
-    await app.client.chat.update({
-      token: token,
-      channel: channel,
-      ts: ts,
-      blocks: channel_message({
-        user,
-        companyName,
-        justification,
-        discount,
-        status,
-      }),
-    });
-  } catch (error) {
-    console.error(error);
-  }
-};
-
 // listen for 'Approve' or 'Reject' button press in thread
 app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
   await ack();
@@ -310,6 +432,13 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       blocks: thread_error({ user: body.user.id, action: action.action_id }),
     });
 
+    const {
+      l1_user,
+      l2_user,
+      sales_ops_user,
+      legal_user,
+    } = require("./settings/approver_users.json");
+
     await wait(3000);
 
     // approve L1_SALES
@@ -318,7 +447,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       channel: body.channel.id,
       ts: body.message.ts,
       blocks: thread_approved({
-        approver: "W0168V76LMD",
+        approver: l1_user,
         approval_level: "SALES_L1",
       }),
     });
@@ -342,7 +471,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       token: context.botToken,
       channel: body.channel.id,
       ts: body.message.thread_ts,
-      approver: "W016NAJDMCM",
+      approver: l2_user,
       approval_level: "L2_SALES",
       status: 2,
       user: body.user.username,
@@ -353,7 +482,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       token: context.botToken,
       channel: body.channel.id,
       ts: body.message.thread_ts,
-      approver: "W016NAJ2Z9B",
+      approver: sales_ops_user,
       approval_level: "SALES_OPS",
       status: 3,
       user: body.user.username,
@@ -364,7 +493,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       token: context.botToken,
       channel: body.channel.id,
       ts: body.message.thread_ts,
-      approver: "W0168V90C6B",
+      approver: legal_user,
       approval_level: "LEGAL",
       status: 4,
       user: body.user.username,
