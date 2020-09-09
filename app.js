@@ -106,6 +106,7 @@ app.event("app_home_opened", async ({ context, event }) => {
   }
 });
 
+// listen for change to approvers
 app.action(
   /^(l1_user|l2_user|sales_ops_user|legal_user).*/,
   async ({ ack, action }) => {
