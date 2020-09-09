@@ -16,12 +16,13 @@ const {
   app_home,
   channel_exists,
   channel_created,
+  discount_approved,
   discount_mention,
   channel_message,
   redirect_home,
+  thread_approved,
   thread_ask,
   thread_error,
-  thread_approved,
 } = require("./blocks/messages");
 
 // initialize env variables
@@ -497,6 +498,13 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       approval_level: "LEGAL",
       status: 4,
       user: body.user.username,
+    });
+
+    // notify user that discount has been approved
+    await app.client.chat.postMessage({
+      token: context.botToken,
+      channel: body.user.id,
+      blocks: discount_approved(companyName),
     });
   } catch (error) {
     console.error(error);

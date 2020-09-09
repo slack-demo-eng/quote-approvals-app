@@ -126,6 +126,15 @@ module.exports = {
       },
     },
   ],
+  discount_approved: (companyName) => [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `Your discount for ${companyName} was approved! :white_check_mark:`,
+      },
+    },
+  ],
   discount_mention: [
     {
       type: "section",
