@@ -33,7 +33,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   clientId: process.env.SLACK_CLIENT_ID,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
-  stateSecret: "my-state-secret",
+  stateSecret: "apples-fans-boats",
   scopes: [
     "channels:history",
     "channels:manage",
@@ -41,10 +41,56 @@ const app = new App({
     "chat:write.public",
     "commands",
     "users:read",
+    "channels:read",
+    "links:read",
   ],
+  userScopes: ["channels:history"],
+  installationStore: {
+    storeInstallation: async (installation) => {
+      return storeInstallationInDb(installation);
+    },
+    fetchInstallation: async (InstallQuery) => {
+      const installation = fetchInstallationFromDb(InstallQuery);
+      if (installation) return installation;
+      return;
+    },
+  },
 });
 
 /* UTILITY FUNCTIONS 🧰 */
+
+// store installation in database
+const storeInstallationInDb = (installation) => {
+  const installationsObj = require("./settings/installations.json");
+
+  const installIndex = installationsObj.installations
+    .map((inst) => inst.team.id)
+    .indexOf(installation.team.id);
+
+  // update existing installation if exists
+  if (~installIndex) {
+    installationsObj.installations[installIndex] = installation;
+  } else {
+    installationsObj.installations.push(installation);
+  }
+
+  fs.writeFile(
+    "./settings/installations.json",
+    JSON.stringify(installationsObj, null, 2),
+    (err) => {
+      if (err) console.error(error);
+    }
+  );
+};
+
+// fetch installation from database
+const fetchInstallationFromDb = (installQuery) => {
+  const { installations } = require("./settings/installations.json");
+  const installation = installations.find(
+    (installation) => installation.team.id === installQuery.teamId
+  );
+  return installation;
+};
 
 // check if approver users exist at each level
 const is_approvers_configured = (approver_users) => {
@@ -106,12 +152,39 @@ const sendApprovedMessage = async ({
 // listen for app home tab opened
 app.event("app_home_opened", async ({ context, event }) => {
   try {
-    const approver_users = require("./settings/approver_users.json");
-    await app.client.views.publish({
-      token: context.botToken,
-      user_id: event.user,
-      view: app_home(approver_users),
-    });
+    const approverUsersObj = require("./settings/approver_users.json");
+    const index = approverUsersObj.approver_users_list.findIndex(
+      (userObj) => userObj.user_id === event.user
+    );
+    if (index === -1) {
+      const newApproverUsersObj = {
+        user_id: event.user,
+        l1_user: "",
+        l2_user: "",
+        sales_ops_user: "",
+        legal_user: "",
+      };
+      approverUsersObj.approver_users_list.push(newApproverUsersObj);
+      fs.writeFile(
+        "./settings/approver_users.json",
+        JSON.stringify(approverUsersObj, null, 2),
+        (error) => {
+          console.error(error);
+        }
+      );
+      await app.client.views.publish({
+        token: context.botToken,
+        user_id: event.user,
+        view: app_home(newApproverUsersObj),
+      });
+    } else {
+      const user_approver_users = approverUsersObj.approver_users_list[index];
+      await app.client.views.publish({
+        token: context.botToken,
+        user_id: event.user,
+        view: app_home(user_approver_users),
+      });
+    }
   } catch (error) {
     console.error(error);
   }
@@ -120,15 +193,19 @@ app.event("app_home_opened", async ({ context, event }) => {
 // listen for change to approvers
 app.action(
   /^(l1_user|l2_user|sales_ops_user|legal_user).*/,
-  async ({ ack, action }) => {
+  async ({ ack, action, body }) => {
     await ack();
     try {
       const approver_users_filename = "./settings/approver_users.json";
-      const approver_users = require(approver_users_filename);
-      approver_users[action.action_id] = action.selected_user;
+      const approverUsersObj = require(approver_users_filename);
+      const foundIndex = approverUsersObj.approver_users_list.findIndex(
+        (x) => x.user_id === body.user.id
+      );
+      approverUsersObj.approver_users_list[foundIndex][action.action_id] =
+        action.selected_user;
       fs.writeFile(
         approver_users_filename,
-        JSON.stringify(approver_users, null, 2),
+        JSON.stringify(approverUsersObj, null, 2),
         (err) => {
           if (err) console.error(error);
         }
