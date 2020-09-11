@@ -86,14 +86,15 @@ const storeInstallationInDb = (installation) => {
 // fetch installation from database
 const fetchInstallationFromDb = (installQuery) => {
   const { installations } = require("./settings/installations.json");
-  const installation = installations.find(
-    (installation) => installation.team.id === installQuery.teamId
-  );
+  const installation = installations.find((installation) => {
+    return installation.team.id === installQuery.teamId;
+  });
   return installation;
 };
 
 // check if approver users exist at each level
 const is_approvers_configured = (approver_users) => {
+  if (!approver_users) return false;
   const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
   if (!l1_user || !l2_user || !sales_ops_user || !legal_user) {
     return false;
@@ -227,7 +228,10 @@ app.action("take_me_home", async ({ ack }) => {
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
   try {
-    const approver_users = require("./settings/approver_users.json");
+    const appproverUsersObj = require("./settings/approver_users.json");
+    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
+      return x.user_id === command.user_id;
+    });
     const users_configured = is_approvers_configured(approver_users);
 
     // send ephemeral message if approvers not configured
@@ -259,7 +263,10 @@ app.command("/discount", async ({ ack, command, context }) => {
 app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
   await ack();
   try {
-    const approver_users = require("./settings/approver_users.json");
+    const appproverUsersObj = require("./settings/approver_users.json");
+    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
+      return x.user_id === body.user.id;
+    });
     const users_configured = is_approvers_configured(approver_users);
 
     // send DM to user if approvers not configured
@@ -312,7 +319,10 @@ app.message(/discount/i, async ({ body, context, message }) => {
 app.action("launch_discount", async ({ ack, body, context }) => {
   await ack();
   try {
-    const approver_users = require("./settings/approver_users.json");
+    const appproverUsersObj = require("./settings/approver_users.json");
+    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
+      return x.user_id === body.user.id;
+    });
     const users_configured = is_approvers_configured(approver_users);
 
     // send ephemeral message if approvers not configured
@@ -412,12 +422,12 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
     });
 
-    const {
-      l1_user,
-      l2_user,
-      sales_ops_user,
-      legal_user,
-    } = require("./settings/approver_users.json");
+    const { approver_users_list } = require("./settings/approver_users.json");
+    const approver_users = approver_users_list.find(
+      (x) => x.user_id === body.user.id
+    );
+
+    const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
 
     // add users to new channel
     await app.client.conversations.invite({
@@ -520,12 +530,12 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       blocks: thread_error({ user: body.user.id, action: action.action_id }),
     });
 
-    const {
-      l1_user,
-      l2_user,
-      sales_ops_user,
-      legal_user,
-    } = require("./settings/approver_users.json");
+    const { approver_users_list } = require("./settings/approver_users.json");
+    const approver_users = approver_users_list.find(
+      (x) => x.user_id === body.user.id
+    );
+
+    const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
 
     await wait(3000);
 
