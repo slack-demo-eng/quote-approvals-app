@@ -51,8 +51,7 @@ const app = new App({
     },
     fetchInstallation: async (InstallQuery) => {
       const installation = fetchInstallationFromDb(InstallQuery);
-      if (installation) return installation;
-      return;
+      return installation;
     },
   },
 });
@@ -87,7 +86,7 @@ const storeInstallationInDb = (installation) => {
 const fetchInstallationFromDb = (installQuery) => {
   const { installations } = require("./settings/installations.json");
   const installation = installations.find((installation) => {
-    return installation.team.id === installQuery.teamId;
+    return installation.enterprise.id === installQuery.enterpriseId;
   });
   return installation;
 };
@@ -420,6 +419,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
     const response = await app.client.conversations.create({
       token: context.botToken,
       name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
+      team_id: body.team.id,
     });
 
     const { approver_users_list } = require("./settings/approver_users.json");
