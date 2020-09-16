@@ -44,7 +44,9 @@ const app = new App({
     "channels:read",
     "links:read",
   ],
-  userScopes: ["channels:history"],
+  installerOptions: {
+    userScopes: ["channels:history"],
+  },
   installationStore: {
     storeInstallation: async (installation) => {
       return storeInstallationInDb(installation);
@@ -150,38 +152,50 @@ const sendApprovedMessage = async ({
 /* SETTINGS ⚙️ */
 
 // listen for app home tab opened
-app.event("app_home_opened", async ({ context, event }) => {
+app.event("app_home_opened", async ({ body, context }) => {
   try {
-    const approverUsersObj = require("./settings/approver_users.json");
-    const index = approverUsersObj.approver_users_list.findIndex(
-      (userObj) => userObj.user_id === event.user
+    const { approver_users_list } = require("./settings/approver_users.json");
+
+    // check if approver users exist for user in workspace
+    const index = approver_users_list.findIndex(
+      (item) =>
+        item.user_id === body.event.user && item.team_id === body.team_id
     );
+
     if (index === -1) {
-      const newApproverUsersObj = {
-        user_id: event.user,
+      const new_approver_users = {
+        user_id: body.event.user,
+        team_id: body.team_id,
         l1_user: "",
         l2_user: "",
         sales_ops_user: "",
         legal_user: "",
       };
-      approverUsersObj.approver_users_list.push(newApproverUsersObj);
+
+      approver_users_list.push(new_approver_users);
+
+      // save new user settings
       fs.writeFile(
         "./settings/approver_users.json",
-        JSON.stringify(approverUsersObj, null, 2),
+        JSON.stringify({ approver_users_list }, null, 2),
         (error) => {
           console.error(error);
         }
       );
+
+      // push blank template to app home
       await app.client.views.publish({
         token: context.botToken,
-        user_id: event.user,
-        view: app_home(newApproverUsersObj),
+        user_id: body.event.user,
+        view: app_home(new_approver_users),
       });
     } else {
-      const user_approver_users = approverUsersObj.approver_users_list[index];
+      const user_approver_users = approver_users_list[index];
+
+      // push existing approver users to app home
       await app.client.views.publish({
         token: context.botToken,
-        user_id: event.user,
+        user_id: body.event.user,
         view: app_home(user_approver_users),
       });
     }
@@ -197,15 +211,14 @@ app.action(
     await ack();
     try {
       const approver_users_filename = "./settings/approver_users.json";
-      const approverUsersObj = require(approver_users_filename);
-      const foundIndex = approverUsersObj.approver_users_list.findIndex(
-        (x) => x.user_id === body.user.id
+      const { approver_users_list } = require(approver_users_filename);
+      const index = approver_users_list.findIndex(
+        (item) => item.user_id === body.user.id && item.team_id === body.team.id
       );
-      approverUsersObj.approver_users_list[foundIndex][action.action_id] =
-        action.selected_user;
+      approver_users_list[index][action.action_id] = action.selected_user;
       fs.writeFile(
         approver_users_filename,
-        JSON.stringify(approverUsersObj, null, 2),
+        JSON.stringify({ approver_users_list }, null, 2),
         (err) => {
           if (err) console.error(error);
         }
@@ -227,9 +240,11 @@ app.action("take_me_home", async ({ ack }) => {
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
   try {
-    const appproverUsersObj = require("./settings/approver_users.json");
-    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
-      return x.user_id === command.user_id;
+    const { approver_users_list } = require("./settings/approver_users.json");
+    const approver_users = approver_users_list.find((item) => {
+      return (
+        item.user_id === command.user_id && item.team_id === command.team_id
+      );
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -262,9 +277,11 @@ app.command("/discount", async ({ ack, command, context }) => {
 app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
   await ack();
   try {
-    const appproverUsersObj = require("./settings/approver_users.json");
-    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
-      return x.user_id === body.user.id;
+    const { approver_users_list } = require("./settings/approver_users.json");
+    const approver_users = approver_users_list.find((item) => {
+      return (
+        item.user_id === body.user.id && item.team_id === body.user.team_id
+      );
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -318,9 +335,9 @@ app.message(/discount/i, async ({ body, context, message }) => {
 app.action("launch_discount", async ({ ack, body, context }) => {
   await ack();
   try {
-    const appproverUsersObj = require("./settings/approver_users.json");
-    const approver_users = appproverUsersObj.approver_users_list.find((x) => {
-      return x.user_id === body.user.id;
+    const { approver_users_list } = require("./settings/approver_users.json");
+    const approver_users = approver_users_list.find((item) => {
+      return item.user_id === body.user.id && item.team_id === body.team.id;
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -424,7 +441,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
 
     const { approver_users_list } = require("./settings/approver_users.json");
     const approver_users = approver_users_list.find(
-      (x) => x.user_id === body.user.id
+      (item) => item.user_id === body.user.id && item.team_id === body.team.id
     );
 
     const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
@@ -532,7 +549,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
 
     const { approver_users_list } = require("./settings/approver_users.json");
     const approver_users = approver_users_list.find(
-      (x) => x.user_id === body.user.id
+      (item) => item.user_id === body.user.id && item.team_id === body.team.id
     );
 
     const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
