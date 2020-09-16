@@ -4,12 +4,13 @@ const axios = require("axios");
 const fs = require("fs");
 
 // import modal blocks
+const modals = require("./blocks/modals");
 const {
   launch_modal,
   approval_details,
   quote_lines_details,
   deal_stats,
-} = require("./blocks/modals");
+} = modals;
 
 // import message blocks
 const {
@@ -187,7 +188,7 @@ app.event("app_home_opened", async ({ body, context }) => {
       await app.client.views.publish({
         token: context.botToken,
         user_id: body.event.user,
-        view: app_home(new_approver_users),
+        view: app_home,
       });
     } else {
       const user_approver_users = approver_users_list[index];
@@ -196,13 +197,30 @@ app.event("app_home_opened", async ({ body, context }) => {
       await app.client.views.publish({
         token: context.botToken,
         user_id: body.event.user,
-        view: app_home(user_approver_users),
+        view: app_home,
       });
     }
   } catch (error) {
     console.error(error);
   }
 });
+
+// listen for edit button click
+app.action(
+  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_description|edit_quote_line_details|edit_deal_stats).*/,
+  async ({ ack, action, body, context }) => {
+    await ack();
+    try {
+      await app.client.views.open({
+        token: context.botToken,
+        trigger_id: body.trigger_id,
+        view: modals[action.action_id],
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+);
 
 // listen for change to approvers
 app.action(

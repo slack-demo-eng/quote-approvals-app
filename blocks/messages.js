@@ -1,21 +1,21 @@
 const moment = require("moment");
 
 module.exports = {
-  app_home: ({ l1_user, l2_user, sales_ops_user, legal_user }) => ({
+  app_home: {
     type: "home",
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `Welcome to *Quote Approvals* :wave:`,
+          text: "Welcome to *Quote Approvals* :wave:",
         },
       },
       {
         type: "header",
         text: {
           type: "plain_text",
-          text: "Approvers",
+          text: "Resources :books:",
           emoji: true,
         },
       },
@@ -27,87 +27,179 @@ module.exports = {
         text: {
           type: "mrkdwn",
           text:
-            "Below you can choose the *approvers* at each level of the approval flow:",
+            ":point_right: Here is a detailed <https://docs.google.com/document/d/13CHXzCkpyCMfTeWT7SyCkyn0_Nf-csxsL6TYx2BXp4M/edit|guide> on how to use the app",
         },
       },
       {
         type: "section",
         text: {
-          type: "plain_text",
+          type: "mrkdwn",
           text: " ",
+        },
+      },
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "Settings :gear:",
           emoji: true,
         },
       },
       {
+        type: "divider",
+      },
+      {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: ":l1: - `Level 1 Sales`",
-        },
-        accessory: {
-          type: "users_select",
-          placeholder: {
-            type: "plain_text",
-            text: "Select a user",
-            emoji: true,
-          },
-          action_id: "l1_user",
-          initial_user: l1_user || undefined,
+          text: "*Approvers* :lock_with_ink_pen:",
         },
       },
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: ":l2: - `Level 2 Sales`",
+          text: "Choose the approvers at each level of the discount process",
         },
         accessory: {
-          type: "users_select",
-          placeholder: {
+          type: "button",
+          text: {
             type: "plain_text",
-            text: "Select a user",
+            text: "Edit",
             emoji: true,
           },
-          action_id: "l2_user",
-          initial_user: l2_user || undefined,
+          action_id: "edit_approvers",
         },
       },
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: ":sales_ops: - `Sales Ops`",
-        },
-        accessory: {
-          type: "users_select",
-          placeholder: {
-            type: "plain_text",
-            text: "Select a user",
-            emoji: true,
-          },
-          action_id: "sales_ops_user",
-          initial_user: sales_ops_user || undefined,
+          text: "*Message Content* :envelope_with_arrow:",
         },
       },
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: ":legal: - `Legal`",
+          text:
+            "Edit the details in the `Proposed Structure` part of the message that is sent to the new channel",
         },
         accessory: {
-          type: "users_select",
-          placeholder: {
+          type: "button",
+          text: {
             type: "plain_text",
-            text: "Select a user",
+            text: "Edit",
             emoji: true,
           },
-          action_id: "legal_user",
-          initial_user: legal_user || undefined,
+          action_id: "edit_proposed_structure",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text:
+            "Edit the details in the `Quote Lines` part of the message that is sent to the new channel",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_quote_lines",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "*Modals* :white_square_button:",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text:
+            "Edit the description of each approver that is shown in `Approver Details`",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_approver_description",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text:
+            "Edit the description of each approver that is shown in `Quote Line Details`",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_quote_line_details",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text:
+            "Edit the description of each approver that is shown in `Deal Stats`",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_deal_stats",
         },
       },
     ],
-  }),
+  },
   channel_created: ({ companyName, channelId }) => [
     {
       type: "section",
