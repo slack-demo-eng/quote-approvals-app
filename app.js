@@ -28,7 +28,6 @@ const {
   thread_ask,
   thread_error,
 } = require("./blocks/messages");
-const { brotliCompressSync } = require("zlib");
 
 // initialize env variables
 dotenv.config();
