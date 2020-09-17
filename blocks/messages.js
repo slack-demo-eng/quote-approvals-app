@@ -26,6 +26,13 @@ module.exports = {
         type: "section",
         text: {
           type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
           text:
             ":point_right: Here is a detailed <https://docs.google.com/document/d/13CHXzCkpyCMfTeWT7SyCkyn0_Nf-csxsL6TYx2BXp4M/edit|guide> on how to use the app",
         },
@@ -47,6 +54,13 @@ module.exports = {
       },
       {
         type: "divider",
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
       },
       {
         type: "section",
@@ -147,7 +161,7 @@ module.exports = {
             text: "Edit",
             emoji: true,
           },
-          action_id: "edit_approver_description",
+          action_id: "edit_approver_details",
         },
       },
       {
@@ -261,7 +275,14 @@ module.exports = {
       ],
     },
   ],
-  channel_message: ({ user, companyName, justification, discount, status }) => [
+  channel_message: ({
+    user,
+    companyName,
+    justification,
+    discount,
+    status,
+    user_settings_obj,
+  }) => [
     {
       type: "section",
       text: {
@@ -323,7 +344,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: `${moment().format("MM-DD-YYYY")}`,
+          text: user_settings_obj.proposed_structure.close_date,
         },
         {
           type: "mrkdwn",
@@ -331,7 +352,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "$0",
+          text: user_settings_obj.proposed_structure.acv_churn,
         },
         {
           type: "mrkdwn",
@@ -339,7 +360,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "$0",
+          text: user_settings_obj.proposed_structure.billings,
         },
         {
           type: "mrkdwn",
@@ -347,7 +368,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "$45,974",
+          text: user_settings_obj.proposed_structure.tcv,
         },
         {
           type: "mrkdwn",
@@ -355,7 +376,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "12",
+          text: user_settings_obj.proposed_structure.subscription_term,
         },
       ],
     },
@@ -376,7 +397,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "Net 30",
+          text: user_settings_obj.proposed_structure.payment_terms,
         },
         {
           type: "mrkdwn",
@@ -384,7 +405,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: "Standard",
+          text: user_settings_obj.proposed_structure.payment_frequency,
         },
       ],
     },
@@ -433,7 +454,7 @@ module.exports = {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*250* x licenses with \`${discount}%\` discount`,
+        text: `*${user_settings_obj.quote_lines.licenses}* x licenses with \`${discount}%\` discount`,
       },
       accessory: {
         type: "button",

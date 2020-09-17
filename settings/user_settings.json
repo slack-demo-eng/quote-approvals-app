@@ -1,0 +1,52 @@
+{
+  "user_settings": [
+    {
+      "user_id": "W0168V8T3F1",
+      "team_id": "T016PTXG0BD",
+      "approver_users": {
+        "l1_user": "W0168V995SB",
+        "l2_user": "W017DGTMA3A",
+        "sales_ops_user": "W0168V7A2UX",
+        "legal_user": "W016NAKRJN9"
+      },
+      "proposed_structure": {
+        "close_date": "2020-09-16",
+        "acv_churn": "$60,000",
+        "billings": "$0",
+        "tcv": "£90,000",
+        "subscription_term": "24",
+        "payment_terms": "Net 90",
+        "payment_frequency": "Regular"
+      },
+      "quote_lines": {
+        "licenses": "500"
+      },
+      "approver_details": {
+        "l1_details": "Test",
+        "l2_details": "One",
+        "sales_ops_details": "Two",
+        "legal_details": "Three"
+      },
+      "quote_line_details": {
+        "product_name": "Lite Plan",
+        "quantity": "500",
+        "start_date": "2020-09-10",
+        "end_date": "2021-12-25",
+        "one_time_credit": "$0",
+        "aov": "$45,974"
+      },
+      "deal_stats": {
+        "employee_count": "2,450",
+        "active_seats": "N/A",
+        "quote": "<https://media.giphy.com/media/l9XgkOGzT3mm1TQCxW/giphy.gif|Q-12695>",
+        "new_aov": "$45,974",
+        "existing_aov": "$0",
+        "assigned_em": "N/A",
+        "type": "Old Business",
+        "prior_year_opportunity": "$0",
+        "uncapped_renewal_base": "$1,000,000",
+        "has_invoice_teams": false
+      }
+    }
+  ]
+}

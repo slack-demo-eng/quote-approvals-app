@@ -3,12 +3,15 @@ const dotenv = require("dotenv");
 const axios = require("axios");
 const fs = require("fs");
 
+// import consts
+const { new_user } = require("./consts/new_user");
+
 // import modal blocks
 const modals = require("./blocks/modals");
 const {
   launch_modal,
-  approval_details,
-  quote_lines_details,
+  approver_details,
+  quote_line_details,
   deal_stats,
 } = modals;
 
@@ -25,6 +28,7 @@ const {
   thread_ask,
   thread_error,
 } = require("./blocks/messages");
+const { brotliCompressSync } = require("zlib");
 
 // initialize env variables
 dotenv.config();
@@ -120,6 +124,7 @@ const sendApprovedMessage = async ({
   approval_level,
   status,
   user,
+  user_settings_obj,
 }) => {
   try {
     await wait(3000);
@@ -143,6 +148,7 @@ const sendApprovedMessage = async ({
         justification,
         discount,
         status,
+        user_settings_obj,
       }),
     });
   } catch (error) {
@@ -155,51 +161,32 @@ const sendApprovedMessage = async ({
 // listen for app home tab opened
 app.event("app_home_opened", async ({ body, context }) => {
   try {
-    const { approver_users_list } = require("./settings/approver_users.json");
+    const { user_settings } = require("./settings/user_settings.json");
 
     // check if approver users exist for user in workspace
-    const index = approver_users_list.findIndex(
-      (item) =>
-        item.user_id === body.event.user && item.team_id === body.team_id
-    );
+    const index = user_settings.findIndex((item) => {
+      return item.user_id === body.event.user && item.team_id === body.team_id;
+    });
 
     if (index === -1) {
-      const new_approver_users = {
-        user_id: body.event.user,
-        team_id: body.team_id,
-        l1_user: "",
-        l2_user: "",
-        sales_ops_user: "",
-        legal_user: "",
-      };
-
-      approver_users_list.push(new_approver_users);
+      user_settings.push(new_user(body.event.user, body.team_id));
 
       // save new user settings
       fs.writeFile(
-        "./settings/approver_users.json",
-        JSON.stringify({ approver_users_list }, null, 2),
-        (error) => {
-          console.error(error);
+        "./settings/user_settings.json",
+        JSON.stringify({ user_settings }, null, 2),
+        (err) => {
+          if (err) console.error(error);
         }
       );
-
-      // push blank template to app home
-      await app.client.views.publish({
-        token: context.botToken,
-        user_id: body.event.user,
-        view: app_home,
-      });
-    } else {
-      const user_approver_users = approver_users_list[index];
-
-      // push existing approver users to app home
-      await app.client.views.publish({
-        token: context.botToken,
-        user_id: body.event.user,
-        view: app_home,
-      });
     }
+
+    // load app home
+    await app.client.views.publish({
+      token: context.botToken,
+      user_id: body.event.user,
+      view: app_home,
+    });
   } catch (error) {
     console.error(error);
   }
@@ -207,14 +194,20 @@ app.event("app_home_opened", async ({ body, context }) => {
 
 // listen for edit button click
 app.action(
-  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_description|edit_quote_line_details|edit_deal_stats).*/,
+  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats).*/,
   async ({ ack, action, body, context }) => {
     await ack();
     try {
+      const { user_settings } = require("./settings/user_settings.json");
+      const user_settings_obj = user_settings.find((item) => {
+        return item.user_id === body.user.id && item.team_id === body.team.id;
+      });
+
+      // push values to edit modal
       await app.client.views.open({
         token: context.botToken,
         trigger_id: body.trigger_id,
-        view: modals[action.action_id],
+        view: modals[action.action_id](user_settings_obj),
       });
     } catch (error) {
       console.error(error);
@@ -222,21 +215,100 @@ app.action(
   }
 );
 
-// listen for change to approvers
-app.action(
-  /^(l1_user|l2_user|sales_ops_user|legal_user).*/,
-  async ({ ack, action, body }) => {
+// listen for save of new approver users
+app.view(
+  /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats).*/,
+  async ({ ack, body, view }) => {
     await ack();
     try {
-      const approver_users_filename = "./settings/approver_users.json";
-      const { approver_users_list } = require(approver_users_filename);
-      const index = approver_users_list.findIndex(
+      const { user_settings } = require("./settings/user_settings.json");
+      const index = user_settings.findIndex(
         (item) => item.user_id === body.user.id && item.team_id === body.team.id
       );
-      approver_users_list[index][action.action_id] = action.selected_user;
+
+      const payload = view.state.values;
+
+      // save new approver users info
+      if (view.callback_id === "save_approver_users") {
+        user_settings[index].approver_users = {
+          l1_user: payload.l1_user_block.l1_user.selected_user,
+          l2_user: payload.l2_user_block.l2_user.selected_user,
+          sales_ops_user:
+            payload.sales_ops_user_block.sales_ops_user.selected_user,
+          legal_user: payload.legal_user_block.legal_user.selected_user,
+        };
+      }
+
+      // save new proposed structure info
+      if (view.callback_id === "save_proposed_structure") {
+        user_settings[index].proposed_structure = {
+          close_date: payload.close_date_block.close_date.selected_date,
+          acv_churn: payload.acv_churn_block.acv_churn.value,
+          billings: payload.billings_block.billings.value,
+          tcv: payload.tcv_block.tcv.value,
+          subscription_term:
+            payload.subscription_term_block.subscription_term.value,
+          payment_terms: payload.payment_terms_block.payment_terms.value,
+          payment_frequency:
+            payload.payment_frequency_block.payment_frequency.value,
+        };
+      }
+
+      // save new quote lines info
+      if (view.callback_id === "save_quote_lines") {
+        user_settings[index].quote_lines = {
+          licenses: payload.licenses_block.licenses.value,
+        };
+      }
+
+      // save new approver details
+      if (view.callback_id === "save_approver_details") {
+        user_settings[index].approver_details = {
+          l1_details: payload.l1_details_block.l1_details.value,
+          l2_details: payload.l2_details_block.l2_details.value,
+          sales_ops_details:
+            payload.sales_ops_details_block.sales_ops_details.value,
+          legal_details: payload.legal_details_block.legal_details.value,
+        };
+      }
+
+      // save new quote line details
+      if (view.callback_id === "save_quote_line_details") {
+        user_settings[index].quote_line_details = {
+          product_name: payload.product_name_block.product_name.value,
+          quantity: payload.quantity_block.quantity.value,
+          start_date: payload.start_date_block.start_date.selected_date,
+          end_date: payload.end_date_block.end_date.selected_date,
+          one_time_credit: payload.one_time_credit_block.one_time_credit.value,
+          aov: payload.aov_block.aov.value,
+        };
+      }
+
+      // save new deal stats
+      if (view.callback_id === "save_deal_stats") {
+        console.log(payload);
+        user_settings[index].deal_stats = {
+          employee_count: payload.employee_count_block.employee_count.value,
+          active_seats: payload.active_seats_block.active_seats.value,
+          quote: payload.quote_block.quote.value,
+          new_aov: payload.new_aov_block.new_aov.value,
+          existing_aov: payload.existing_aov_block.existing_aov.value,
+          assigned_em: payload.assigned_em_block.assigned_em.value,
+          type: payload.type_block.type.value,
+          prior_year_opportunity:
+            payload.prior_year_opportunity_block.prior_year_opportunity.value,
+          uncapped_renewal_base:
+            payload.uncapped_renewal_base_block.uncapped_renewal_base.value,
+          has_invoice_teams:
+            payload.has_invoice_teams_block.has_invoice_teams.value === "true"
+              ? true
+              : false,
+        };
+      }
+
       fs.writeFile(
-        approver_users_filename,
-        JSON.stringify({ approver_users_list }, null, 2),
+        "./settings/user_settings.json",
+        JSON.stringify({ user_settings }, null, 2),
         (err) => {
           if (err) console.error(error);
         }
@@ -258,8 +330,8 @@ app.action("take_me_home", async ({ ack }) => {
 app.command("/discount", async ({ ack, command, context }) => {
   await ack();
   try {
-    const { approver_users_list } = require("./settings/approver_users.json");
-    const approver_users = approver_users_list.find((item) => {
+    const { user_settings } = require("./settings/user_settings.json");
+    const { approver_users } = user_settings.find((item) => {
       return (
         item.user_id === command.user_id && item.team_id === command.team_id
       );
@@ -295,8 +367,8 @@ app.command("/discount", async ({ ack, command, context }) => {
 app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
   await ack();
   try {
-    const { approver_users_list } = require("./settings/approver_users.json");
-    const approver_users = approver_users_list.find((item) => {
+    const { user_settings } = require("./settings/user_settings.json");
+    const { approver_users } = user_settings.find((item) => {
       return (
         item.user_id === body.user.id && item.team_id === body.user.team_id
       );
@@ -335,7 +407,7 @@ app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
 });
 
 // listen for mentions of 'discount'
-app.message(/discount/i, async ({ body, context, message }) => {
+app.message(/discount/i, async ({ context, message }) => {
   try {
     // send ephemaral message
     await app.client.chat.postEphemeral({
@@ -353,8 +425,8 @@ app.message(/discount/i, async ({ body, context, message }) => {
 app.action("launch_discount", async ({ ack, body, context }) => {
   await ack();
   try {
-    const { approver_users_list } = require("./settings/approver_users.json");
-    const approver_users = approver_users_list.find((item) => {
+    const { user_settings } = require("./settings/user_settings.json");
+    const { approver_users } = user_settings.find((item) => {
       return item.user_id === body.user.id && item.team_id === body.team.id;
     });
     const users_configured = is_approvers_configured(approver_users);
@@ -457,12 +529,17 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
       team_id: body.team.id,
     });
 
-    const { approver_users_list } = require("./settings/approver_users.json");
-    const approver_users = approver_users_list.find(
+    const { user_settings } = require("./settings/user_settings.json");
+    const user_settings_obj = user_settings.find(
       (item) => item.user_id === body.user.id && item.team_id === body.team.id
     );
 
-    const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
+    const {
+      l1_user,
+      l2_user,
+      sales_ops_user,
+      legal_user,
+    } = user_settings_obj.approver_users;
 
     // add users to new channel
     await app.client.conversations.invite({
@@ -488,6 +565,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
         justification,
         discount,
         status: 0,
+        user_settings_obj,
       }),
     });
 
@@ -512,10 +590,15 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
 app.action("status_details", async ({ ack, context, body }) => {
   await ack();
   try {
+    const { user_settings } = require("./settings/user_settings.json");
+    const user_settings_obj = user_settings.find(
+      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+    );
+
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: approval_details,
+      view: approver_details(user_settings_obj.approver_details),
     });
   } catch (error) {
     console.error(error);
@@ -526,10 +609,15 @@ app.action("status_details", async ({ ack, context, body }) => {
 app.action("quote_lines_details", async ({ ack, context, body }) => {
   await ack();
   try {
+    const { user_settings } = require("./settings/user_settings.json");
+    const user_settings_obj = user_settings.find(
+      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+    );
+
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: quote_lines_details,
+      view: quote_line_details(user_settings_obj.quote_line_details),
     });
   } catch (error) {
     console.error(error);
@@ -540,10 +628,15 @@ app.action("quote_lines_details", async ({ ack, context, body }) => {
 app.action("deal_stats", async ({ ack, context, body }) => {
   await ack();
   try {
+    const { user_settings } = require("./settings/user_settings.json");
+    const user_settings_obj = user_settings.find(
+      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+    );
+
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: deal_stats,
+      view: deal_stats(user_settings_obj.deal_stats),
     });
   } catch (error) {
     console.error(error);
@@ -565,12 +658,17 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       blocks: thread_error({ user: body.user.id, action: action.action_id }),
     });
 
-    const { approver_users_list } = require("./settings/approver_users.json");
-    const approver_users = approver_users_list.find(
+    const { user_settings } = require("./settings/user_settings.json");
+    const user_settings_obj = user_settings.find(
       (item) => item.user_id === body.user.id && item.team_id === body.team.id
     );
 
-    const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
+    const {
+      l1_user,
+      l2_user,
+      sales_ops_user,
+      legal_user,
+    } = user_settings_obj.approver_users;
 
     await wait(3000);
 
@@ -596,6 +694,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
         justification,
         discount,
         status: 1,
+        user_settings_obj,
       }),
     });
 
@@ -608,6 +707,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       approval_level: "L2_SALES",
       status: 2,
       user: body.user.username,
+      user_settings_obj,
     });
 
     // SALES_OPS approval
@@ -619,6 +719,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       approval_level: "SALES_OPS",
       status: 3,
       user: body.user.username,
+      user_settings_obj,
     });
 
     // LEGAL approval
@@ -630,6 +731,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
       approval_level: "LEGAL",
       status: 4,
       user: body.user.username,
+      user_settings_obj,
     });
 
     // notify user that discount has been approved
