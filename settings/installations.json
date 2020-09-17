@@ -1,38 +1,3 @@
 {
-  "installations": [
-    {
-      "team": {
-        "id": "T016PTXG0BD",
-        "name": "Sales"
-      },
-      "appId": "A01AJDXR8SJ",
-      "user": {
-        "token": "xoxp-1227949544387-1227743136194-1365255923253-fd5c41eb8b6b45a9b4e57005d65ed404",
-        "scopes": [
-          "channels:history"
-        ],
-        "id": "W0168V8T3F1"
-      },
-      "bot": {
-        "scopes": [
-          "channels:history",
-          "channels:manage",
-          "chat:write",
-          "chat:write.public",
-          "commands",
-          "users:read",
-          "channels:read",
-          "links:read"
-        ],
-        "token": "xoxb-1227949544387-1351245634599-ajPaCnsj0OxoR5C7ZUnrBDu6",
-        "userId": "W01AS5NFL9Z",
-        "id": "B01AK7GA8KY"
-      },
-      "tokenType": "bot",
-      "enterprise": {
-        "id": "E016H034A86",
-        "name": "Slack Demo 685"
-      }
-    }
-  ]
+  "installations": []
 }
