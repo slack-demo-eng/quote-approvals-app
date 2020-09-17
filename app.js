@@ -318,8 +318,33 @@ app.view(
   }
 );
 
-// acknowledge redirect to home clicked
-app.action("take_me_home", async ({ ack }) => {
+// restore config defaults
+app.action("restore_defaults", async ({ ack, body }) => {
+  await ack();
+  try {
+    console.log(body);
+    const { user_settings } = require("./settings/user_settings.json");
+    const index = user_settings.findIndex((item) => {
+      return item.user_id === body.user.id && item.team_id === body.team.id;
+    });
+
+    user_settings[index] = new_user(body.user.id, body.team.id);
+
+    // restore user settings
+    fs.writeFile(
+      "./settings/user_settings.json",
+      JSON.stringify({ user_settings }, null, 2),
+      (err) => {
+        if (err) console.error(error);
+      }
+    );
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// acknowledge no functionality button clicks
+app.action(/take_me_home|uninstall_app.*/, async ({ ack }) => {
   await ack();
 });
 

@@ -213,8 +213,54 @@ module.exports = {
         },
       },
       {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: "App Actions :control_knobs:",
+          emoji: true,
+        },
+      },
+      {
+        type: "divider",
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
         type: "actions",
         elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Restore Config Defaults",
+              emoji: true,
+            },
+            action_id: "restore_defaults",
+            confirm: {
+              title: {
+                type: "plain_text",
+                text: "Are you sure?",
+              },
+              text: {
+                type: "mrkdwn",
+                text: "All custom configuration will be lost",
+              },
+              confirm: {
+                type: "plain_text",
+                text: "Restore",
+              },
+              deny: {
+                type: "plain_text",
+                text: "Cancel",
+              },
+              style: "danger",
+            },
+          },
           {
             type: "button",
             text: {
@@ -222,7 +268,7 @@ module.exports = {
               text: "Uninstall App",
               emoji: true,
             },
-            action_id: "delete_app",
+            action_id: "uninstall_app",
             style: "danger",
             confirm: {
               title: {
