@@ -48,7 +48,7 @@ module.exports = {
         type: "header",
         text: {
           type: "plain_text",
-          text: "Settings :gear:",
+          text: "Configuration :gear:",
           emoji: true,
         },
       },
@@ -211,6 +211,40 @@ module.exports = {
           },
           action_id: "edit_deal_stats",
         },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Uninstall App",
+              emoji: true,
+            },
+            action_id: "delete_app",
+            style: "danger",
+            confirm: {
+              title: {
+                type: "plain_text",
+                text: "Are you sure?",
+              },
+              text: {
+                type: "mrkdwn",
+                text:
+                  "To delete the app, head to the 'About' tab, then click 'Settings'. You'll be taken to a new browser window where you can 'Remove App'",
+              },
+              confirm: {
+                type: "plain_text",
+                text: "Got it!",
+              },
+              deny: {
+                type: "plain_text",
+                text: "Cancel",
+              },
+            },
+          },
+        ],
       },
     ],
   },
