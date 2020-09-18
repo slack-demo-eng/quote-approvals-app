@@ -18,6 +18,10 @@ const new_user = (user_id, team_id) => ({
     payment_terms: "Net 30",
     payment_frequency: "Standard",
   },
+  platform_image: {
+    url:
+      "https://raw.githubusercontent.com/slack-demo-eng/demo-static-assets/master/app_packs/quote-approvals/salesforce_1.png",
+  },
   quote_lines: {
     licenses: "250",
   },

@@ -586,6 +586,41 @@ module.exports = {
       },
     ],
   }),
+  edit_platform_image: ({ platform_image }) => ({
+    type: "modal",
+    callback_id: "save_platform_image",
+    title: {
+      type: "plain_text",
+      text: "Platform Image",
+      emoji: true,
+    },
+    submit: {
+      type: "plain_text",
+      text: "Save",
+      emoji: true,
+    },
+    close: {
+      type: "plain_text",
+      text: "Cancel",
+      emoji: true,
+    },
+    blocks: [
+      {
+        type: "input",
+        block_id: "url_block",
+        element: {
+          type: "plain_text_input",
+          action_id: "url",
+          initial_value: platform_image.url,
+        },
+        label: {
+          type: "plain_text",
+          text: "Image URL",
+          emoji: true,
+        },
+      },
+    ],
+  }),
   edit_proposed_structure: ({ proposed_structure }) => ({
     type: "modal",
     callback_id: "save_proposed_structure",

@@ -144,6 +144,30 @@ module.exports = {
         type: "section",
         text: {
           type: "mrkdwn",
+          text:
+            "Edit the platform icon displayed in the message that is sent to the new channel (defaults to the Salesforce)",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_platform_image",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
           text: ":white_square_button:   *Modals*",
         },
       },
@@ -371,7 +395,7 @@ module.exports = {
       },
       accessory: {
         type: "image",
-        image_url: "https://quote-approvals.s3.amazonaws.com/salesforce_1.png",
+        image_url: user_settings_obj.platform_image.url,
         alt_text: "salesforce",
       },
     },
