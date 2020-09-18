@@ -15,7 +15,7 @@ module.exports = {
         type: "header",
         text: {
           type: "plain_text",
-          text: "Resources :books:",
+          text: ":books:  Resources",
           emoji: true,
         },
       },
@@ -48,7 +48,7 @@ module.exports = {
         type: "header",
         text: {
           type: "plain_text",
-          text: "Configuration :gear:",
+          text: ":gear:  Configuration",
           emoji: true,
         },
       },
@@ -66,7 +66,7 @@ module.exports = {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Approvers* :lock_with_ink_pen:",
+          text: ":lock_with_ink_pen:   *Approvers*",
         },
       },
       {
@@ -89,7 +89,7 @@ module.exports = {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Message Content* :envelope_with_arrow:",
+          text: ":envelope_with_arrow:   *Message Content*",
         },
       },
       {
@@ -144,7 +144,7 @@ module.exports = {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Modals* :white_square_button:",
+          text: ":white_square_button:   *Modals*",
         },
       },
       {
@@ -216,7 +216,7 @@ module.exports = {
         type: "header",
         text: {
           type: "plain_text",
-          text: "App Actions :control_knobs:",
+          text: ":control_knobs:   App Actions",
           emoji: true,
         },
       },

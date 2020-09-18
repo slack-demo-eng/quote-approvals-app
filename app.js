@@ -4,7 +4,7 @@ const axios = require("axios");
 const fs = require("fs");
 
 // import consts
-const { new_user } = require("./consts/new_user");
+const { new_user } = require("./settings/new_user");
 
 // import modal blocks
 const modals = require("./blocks/modals");
@@ -28,6 +28,14 @@ const {
   thread_ask,
   thread_error,
 } = require("./blocks/messages");
+
+// import database functions
+const {
+  storeTokens,
+  storeLocalInstallation,
+  retrieveTokens,
+  fetchLocalInstallation,
+} = require("./db/helpers");
 
 // initialize env variables
 dotenv.config();
@@ -53,49 +61,18 @@ const app = new App({
   },
   installationStore: {
     storeInstallation: async (installation) => {
-      return storeInstallationInDb(installation);
+      await storeTokens(installation);
+      return storeLocalInstallation(installation);
     },
-    fetchInstallation: async (InstallQuery) => {
-      const installation = fetchInstallationFromDb(InstallQuery);
+    fetchInstallation: async ({ teamId }) => {
+      const tokens = await retrieveTokens(teamId);
+      const installation = fetchLocalInstallation(tokens, teamId);
       return installation;
     },
   },
 });
 
 /* UTILITY FUNCTIONS 🧰 */
-
-// store installation in database
-const storeInstallationInDb = (installation) => {
-  const installationsObj = require("./settings/installations.json");
-
-  const installIndex = installationsObj.installations
-    .map((inst) => inst.team.id)
-    .indexOf(installation.team.id);
-
-  // update existing installation if exists
-  if (~installIndex) {
-    installationsObj.installations[installIndex] = installation;
-  } else {
-    installationsObj.installations.push(installation);
-  }
-
-  fs.writeFile(
-    "./settings/installations.json",
-    JSON.stringify(installationsObj, null, 2),
-    (err) => {
-      if (err) console.error(error);
-    }
-  );
-};
-
-// fetch installation from database
-const fetchInstallationFromDb = (installQuery) => {
-  const { installations } = require("./settings/installations.json");
-  const installation = installations.find((installation) => {
-    return installation.enterprise.id === installQuery.enterpriseId;
-  });
-  return installation;
-};
 
 // check if approver users exist at each level
 const is_approvers_configured = (approver_users) => {
