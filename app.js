@@ -170,7 +170,7 @@ app.event("app_home_opened", async ({ body, context }) => {
 
 // listen for edit button click
 app.action(
-  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats).*/,
+  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image).*/,
   async ({ ack, action, body, context }) => {
     await ack();
     try {
@@ -193,7 +193,7 @@ app.action(
 
 // listen for save of new approver users
 app.view(
-  /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats).*/,
+  /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats|save_platform_image).*/,
   async ({ ack, body, view }) => {
     await ack();
     try {
@@ -278,6 +278,13 @@ app.view(
             payload.has_invoice_teams_block.has_invoice_teams.value === "true"
               ? true
               : false,
+        };
+      }
+
+      // save platform image
+      if (view.callback_id === "save_platform_image") {
+        user_settings[index].platform_image = {
+          url: payload.url_block.url.value,
         };
       }
 
