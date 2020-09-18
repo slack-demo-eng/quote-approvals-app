@@ -164,7 +164,7 @@ app.event("app_home_opened", async ({ body, context }) => {
 
     // check if approver users exist for user in workspace
     const index = user_settings.findIndex((item) => {
-      return item.user_id === body.event.user && item.team_id === body.team_id;
+      return item.user_id === body.event.user;
     });
 
     if (index === -1) {
@@ -199,7 +199,7 @@ app.action(
     try {
       const { user_settings } = require("./settings/user_settings.json");
       const user_settings_obj = user_settings.find((item) => {
-        return item.user_id === body.user.id && item.team_id === body.team.id;
+        return item.user_id === body.user.id;
       });
 
       // push values to edit modal
@@ -222,7 +222,7 @@ app.view(
     try {
       const { user_settings } = require("./settings/user_settings.json");
       const index = user_settings.findIndex(
-        (item) => item.user_id === body.user.id && item.team_id === body.team.id
+        (item) => item.user_id === body.user.id
       );
 
       const payload = view.state.values;
@@ -285,7 +285,6 @@ app.view(
 
       // save new deal stats
       if (view.callback_id === "save_deal_stats") {
-        console.log(payload);
         user_settings[index].deal_stats = {
           employee_count: payload.employee_count_block.employee_count.value,
           active_seats: payload.active_seats_block.active_seats.value,
@@ -322,10 +321,9 @@ app.view(
 app.action("restore_defaults", async ({ ack, body }) => {
   await ack();
   try {
-    console.log(body);
     const { user_settings } = require("./settings/user_settings.json");
     const index = user_settings.findIndex((item) => {
-      return item.user_id === body.user.id && item.team_id === body.team.id;
+      return item.user_id === body.user.id;
     });
 
     user_settings[index] = new_user(body.user.id, body.team.id);
@@ -356,9 +354,7 @@ app.command("/discount", async ({ ack, command, context }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
-      return (
-        item.user_id === command.user_id && item.team_id === command.team_id
-      );
+      return item.user_id === command.user_id;
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -393,9 +389,7 @@ app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
-      return (
-        item.user_id === body.user.id && item.team_id === body.user.team_id
-      );
+      return item.user_id === body.user.id;
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -451,7 +445,7 @@ app.action("launch_discount", async ({ ack, body, context }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
-      return item.user_id === body.user.id && item.team_id === body.team.id;
+      return item.user_id === body.user.id;
     });
     const users_configured = is_approvers_configured(approver_users);
 
@@ -555,7 +549,7 @@ app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
 
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+      (item) => item.user_id === body.user.id
     );
 
     const {
@@ -616,7 +610,7 @@ app.action("status_details", async ({ ack, context, body }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+      (item) => item.user_id === body.user.id
     );
 
     await app.client.views.open({
@@ -635,7 +629,7 @@ app.action("quote_lines_details", async ({ ack, context, body }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+      (item) => item.user_id === body.user.id
     );
 
     await app.client.views.open({
@@ -654,7 +648,7 @@ app.action("deal_stats", async ({ ack, context, body }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+      (item) => item.user_id === body.user.id
     );
 
     await app.client.views.open({
@@ -684,7 +678,7 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
 
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id && item.team_id === body.team.id
+      (item) => item.user_id === body.user.id
     );
 
     const {
