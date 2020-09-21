@@ -22,6 +22,10 @@ const new_user = (user_id, team_id) => ({
     url:
       "https://raw.githubusercontent.com/slack-demo-eng/demo-static-assets/master/app_packs/quote-approvals/salesforce_1.png",
   },
+  sales_order_form: {
+    url:
+      "https://docs.google.com/document/d/1qVpLLOyA4EEDsZykYx1yBFsOTXPwZgVDyTwNa6tUO3k/edit?usp=sharing",
+  },
   quote_lines: {
     licenses: "250",
   },

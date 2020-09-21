@@ -170,7 +170,7 @@ app.event("app_home_opened", async ({ body, context }) => {
 
 // listen for edit button click
 app.action(
-  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image).*/,
+  /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image|edit_sales_order_form_link).*/,
   async ({ ack, action, body, context }) => {
     await ack();
     try {
@@ -193,7 +193,7 @@ app.action(
 
 // listen for save of new approver users
 app.view(
-  /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats|save_platform_image).*/,
+  /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats|save_platform_image|save_sales_order_form_link).*/,
   async ({ ack, body, view }) => {
     await ack();
     try {
@@ -288,6 +288,13 @@ app.view(
         };
       }
 
+      // save sales order form link
+      if (view.callback_id === "save_sales_order_form_link") {
+        user_settings[index].sales_order_form = {
+          url: payload.url_block.url.value,
+        };
+      }
+
       fs.writeFile(
         "./settings/user_settings.json",
         JSON.stringify({ user_settings }, null, 2),
@@ -326,7 +333,7 @@ app.action("restore_defaults", async ({ ack, body }) => {
 });
 
 // acknowledge no functionality button clicks
-app.action(/take_me_home|uninstall_app.*/, async ({ ack }) => {
+app.action(/take_me_home|uninstall_app|external_link.*/, async ({ ack }) => {
   await ack();
 });
 
@@ -740,7 +747,10 @@ app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
     await app.client.chat.postMessage({
       token: context.botToken,
       channel: body.user.id,
-      blocks: discount_approved(companyName),
+      blocks: discount_approved(
+        companyName,
+        user_settings_obj.sales_order_form.url
+      ),
     });
   } catch (error) {
     console.error(error);

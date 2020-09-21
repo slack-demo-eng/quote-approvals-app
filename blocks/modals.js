@@ -621,6 +621,41 @@ module.exports = {
       },
     ],
   }),
+  edit_sales_order_form_link: ({ sales_order_form }) => ({
+    type: "modal",
+    callback_id: "save_sales_order_form_link",
+    title: {
+      type: "plain_text",
+      text: "Sales Order Form",
+      emoji: true,
+    },
+    submit: {
+      type: "plain_text",
+      text: "Save",
+      emoji: true,
+    },
+    close: {
+      type: "plain_text",
+      text: "Cancel",
+      emoji: true,
+    },
+    blocks: [
+      {
+        type: "input",
+        block_id: "url_block",
+        element: {
+          type: "plain_text_input",
+          action_id: "url",
+          initial_value: sales_order_form.url,
+        },
+        label: {
+          type: "plain_text",
+          text: "Document URL",
+          emoji: true,
+        },
+      },
+    ],
+  }),
   edit_proposed_structure: ({ proposed_structure }) => ({
     type: "modal",
     callback_id: "save_proposed_structure",
