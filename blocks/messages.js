@@ -145,7 +145,7 @@ module.exports = {
         text: {
           type: "mrkdwn",
           text:
-            "Edit the platform icon displayed in the message that is sent to the new channel (defaults to the Salesforce)",
+            "Edit the platform icon displayed in the message that is sent to the new channel (defaults to *Salesforce*)",
         },
         accessory: {
           type: "button",
@@ -155,6 +155,36 @@ module.exports = {
             emoji: true,
           },
           action_id: "edit_platform_image",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "Edit the link to the *Sales Order Form*",
+        },
+        accessory: {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Edit",
+            emoji: true,
+          },
+          action_id: "edit_sales_order_form_link",
         },
       },
       {
@@ -336,12 +366,29 @@ module.exports = {
       },
     },
   ],
-  discount_approved: (companyName) => [
+  discount_approved: (companyName, url) => [
     {
       type: "section",
       text: {
         type: "mrkdwn",
         text: `Your discount for ${companyName} was approved! :white_check_mark:`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "Here's your order form :arrow_right:",
+      },
+      accessory: {
+        type: "button",
+        text: {
+          type: "plain_text",
+          text: "Sales Order Form :link:",
+          emoji: true,
+        },
+        url,
+        action_id: "external_link",
       },
     },
   ],
