@@ -97,8 +97,11 @@ const fetchLocalInstallation = (tokens, teamId) => {
   const installation = installations.find((item) => {
     return item.team.id === teamId;
   });
-  installation.bot.token = tokens.bot_token;
-  installation.user.token = tokens.user_token;
+
+  if (installation && installation.bot && installation.user) {
+    installation.bot.token = tokens.bot_token;
+    installation.user.token = tokens.user_token;
+  }
   return installation;
 };
 
