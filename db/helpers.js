@@ -7,11 +7,12 @@ const fs = require("fs");
 dotenv.config();
 
 // connect to db
-const connection = mysql.createConnection({
+const connection = mysql.createPool({
+  connectionLimit: 1,
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: "demozone_dev",
+  database: process.env.DB_DATABASE,
 });
 
 // store tokens in db

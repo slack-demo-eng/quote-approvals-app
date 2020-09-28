@@ -4,7 +4,7 @@
   "description": "Approve quotes directly from Slack",
   "repository": {
     "type": "git",
-    "url": "https://github.com/georgefairbairn/quote-approvals-app.git"
+    "url": "https://github.com/slack-demo-eng/quote-approvals-app.git"
   },
   "main": "app.js",
   "scripts": {
