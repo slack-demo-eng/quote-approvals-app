@@ -99,6 +99,7 @@ const fetchLocalInstallation = (tokens, teamId) => {
   });
 
   if (installation && installation.bot && installation.user) {
+    // attach tokens to installation obj
     installation.bot.token = tokens.bot_token;
     installation.user.token = tokens.user_token;
   }
