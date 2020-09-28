@@ -6,7 +6,7 @@
   <h1>Quote Approvals Demo Guide</h1>
 </div>
 
-For a more detailed version of this guide (with GIFs!) please head :point_right: [here](https://docs.google.com/document/d/13CHXzCkpyCMfTeWT7SyCkyn0_Nf-csxsL6TYx2BXp4M/edit?usp=sharing)
+For a detailed guide on how to use the app (with GIFs!) please head :point_right: [here](https://docs.google.com/document/d/13CHXzCkpyCMfTeWT7SyCkyn0_Nf-csxsL6TYx2BXp4M/edit?usp=sharing)
 
 
 ## 📃 Description
