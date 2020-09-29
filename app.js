@@ -45,7 +45,7 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   clientId: process.env.SLACK_CLIENT_ID,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
-  stateSecret: "apples-fans-boats",
+  stateSecret: process.env.SLACK_STATE_SECRET,
   scopes: [
     "channels:history",
     "channels:manage",
