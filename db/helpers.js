@@ -15,7 +15,7 @@ const connection = mysql.createPool({
   database: process.env.DB_DATABASE,
 });
 
-const appName = "APPROVALS";
+const appName = "QUOTE-APPROVALS";
 
 // store tokens in db
 const storeTokens = (installation) => {
