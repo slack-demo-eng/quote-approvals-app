@@ -75,7 +75,7 @@ const app = new App({
 /* UTILITY FUNCTIONS 🧰 */
 
 // check if approver users exist at each level
-const is_approvers_configured = (approver_users) => {
+const isApproversConfigured = (approver_users) => {
   if (!approver_users) return false;
   const { l1_user, l2_user, sales_ops_user, legal_user } = approver_users;
   if (!l1_user || !l2_user || !sales_ops_user || !legal_user) {
@@ -347,7 +347,7 @@ app.command("/discount", async ({ ack, command, context }) => {
     const { approver_users } = user_settings.find((item) => {
       return item.user_id === command.user_id;
     });
-    const users_configured = is_approvers_configured(approver_users);
+    const users_configured = isApproversConfigured(approver_users);
 
     // send ephemeral message if approvers not configured
     if (!users_configured) {
@@ -382,7 +382,7 @@ app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
     const { approver_users } = user_settings.find((item) => {
       return item.user_id === body.user.id;
     });
-    const users_configured = is_approvers_configured(approver_users);
+    const users_configured = isApproversConfigured(approver_users);
 
     // send DM to user if approvers not configured
     if (!users_configured) {
@@ -438,7 +438,7 @@ app.action("launch_discount", async ({ ack, body, context }) => {
     const { approver_users } = user_settings.find((item) => {
       return item.user_id === body.user.id;
     });
-    const users_configured = is_approvers_configured(approver_users);
+    const users_configured = isApproversConfigured(approver_users);
 
     // send ephemeral message if approvers not configured
     if (!users_configured) {
