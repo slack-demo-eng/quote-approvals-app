@@ -15,12 +15,14 @@ const connection = mysql.createPool({
   database: process.env.DB_DATABASE,
 });
 
+const appName = "QUOTE-APPROVALS";
+
 // store tokens in db
 const storeTokens = (installation) => {
   let sql =
     "INSERT INTO demo_app_tokens VALUES (?, ?, ?, ?, ?, ? ,?, ?, ?) ON DUPLICATE KEY UPDATE user_token= ?, bot_token = ?, installed_on = ?";
   const inserts = [
-    "QUOTE-APPROVALS",
+    appName,
     installation.user.id,
     installation.team.id,
     installation.team.name,
@@ -45,7 +47,7 @@ const storeTokens = (installation) => {
   });
 };
 
-// store local installation record
+// store installation object locally inside installations.json
 const storeLocalInstallation = (installation) => {
   const { installations } = require("./installations");
 
@@ -77,7 +79,7 @@ const storeLocalInstallation = (installation) => {
 const retrieveTokens = (teamId) => {
   let sql =
     "SELECT user_token, bot_token FROM demo_app_tokens WHERE team_id = ? AND app_name = ?";
-  const inserts = [teamId, "QUOTE-APPROVALS"];
+  const inserts = [teamId, appName];
   sql = mysql.format(sql, inserts);
 
   return new Promise((resolve, reject) => {
@@ -92,7 +94,7 @@ const retrieveTokens = (teamId) => {
   });
 };
 
-// fetch installation from database
+// fetch installation from installations.json and attach tokens
 const fetchLocalInstallation = (tokens, teamId) => {
   const { installations } = require("./installations.json");
   const installation = installations.find((item) => {
