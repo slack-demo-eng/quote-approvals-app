@@ -135,7 +135,7 @@ const sendApprovedMessage = async ({
 /* SETTINGS ⚙️ */
 
 // listen for app home tab opened
-app.event("app_home_opened", async ({ body, context }) => {
+app.event("app_home_opened", async ({ body, context, logger }) => {
   try {
     const { user_settings } = require("./settings/user_settings.json");
 
@@ -152,7 +152,7 @@ app.event("app_home_opened", async ({ body, context }) => {
         "./settings/user_settings.json",
         JSON.stringify({ user_settings }, null, 2),
         (err) => {
-          if (err) console.error(error);
+          if (err) logger.error(error);
         }
       );
     }
@@ -164,14 +164,14 @@ app.event("app_home_opened", async ({ body, context }) => {
       view: app_home,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // listen for edit button click
 app.action(
   /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image|edit_sales_order_form_link).*/,
-  async ({ ack, action, body, context }) => {
+  async ({ ack, action, body, context, logger }) => {
     await ack();
     try {
       const { user_settings } = require("./settings/user_settings.json");
@@ -186,7 +186,7 @@ app.action(
         view: modals[action.action_id](user_settings_obj),
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     }
   }
 );
@@ -194,7 +194,7 @@ app.action(
 // listen for save of new approver users
 app.view(
   /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats|save_platform_image|save_sales_order_form_link).*/,
-  async ({ ack, body, view }) => {
+  async ({ ack, body, view, logger }) => {
     await ack();
     try {
       const { user_settings } = require("./settings/user_settings.json");
@@ -299,17 +299,17 @@ app.view(
         "./settings/user_settings.json",
         JSON.stringify({ user_settings }, null, 2),
         (err) => {
-          if (err) console.error(error);
+          if (err) logger.error(error);
         }
       );
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     }
   }
 );
 
 // restore config defaults
-app.action("restore_defaults", async ({ ack, body }) => {
+app.action("restore_defaults", async ({ ack, body, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -324,23 +324,30 @@ app.action("restore_defaults", async ({ ack, body }) => {
       "./settings/user_settings.json",
       JSON.stringify({ user_settings }, null, 2),
       (err) => {
-        if (err) console.error(error);
+        if (err) logger.error(error);
       }
     );
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // acknowledge no functionality button clicks
-app.action(/take_me_home|uninstall_app|external_link.*/, async ({ ack }) => {
-  await ack();
-});
+app.action(
+  /take_me_home|uninstall_app|external_link.*/,
+  async ({ ack, logger }) => {
+    try {
+      await ack();
+    } catch (error) {
+      logger.error(error);
+    }
+  }
+);
 
 /* LAUNCH 🚀 */
 
 // listen for slash command
-app.command("/discount", async ({ ack, command, context }) => {
+app.command("/discount", async ({ ack, command, context, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -370,53 +377,56 @@ app.command("/discount", async ({ ack, command, context }) => {
       view: launch_modal,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // listen for shortcut
-app.shortcut("discount_request", async ({ ack, body, context, shortcut }) => {
-  await ack();
-  try {
-    const { user_settings } = require("./settings/user_settings.json");
-    const { approver_users } = user_settings.find((item) => {
-      return item.user_id === body.user.id;
-    });
-    const users_configured = isApproversConfigured(approver_users);
-
-    // send DM to user if approvers not configured
-    if (!users_configured) {
-      const {
-        bot: { app_id },
-      } = await app.client.bots.info({
-        token: context.botToken,
-        bot: context.botId,
+app.shortcut(
+  "discount_request",
+  async ({ ack, body, context, shortcut, logger }) => {
+    await ack();
+    try {
+      const { user_settings } = require("./settings/user_settings.json");
+      const { approver_users } = user_settings.find((item) => {
+        return item.user_id === body.user.id;
       });
+      const users_configured = isApproversConfigured(approver_users);
 
-      await app.client.chat.postMessage({
+      // send DM to user if approvers not configured
+      if (!users_configured) {
+        const {
+          bot: { app_id },
+        } = await app.client.bots.info({
+          token: context.botToken,
+          bot: context.botId,
+        });
+
+        await app.client.chat.postMessage({
+          token: context.botToken,
+          channel: body.user.id,
+          blocks: redirect_home({
+            workspace_id: body.user.team_id,
+            app_id,
+          }),
+        });
+        return;
+      }
+
+      // open modal
+      await app.client.views.open({
         token: context.botToken,
-        channel: body.user.id,
-        blocks: redirect_home({
-          workspace_id: body.user.team_id,
-          app_id,
-        }),
+        trigger_id: shortcut.trigger_id,
+        view: launch_modal,
       });
-      return;
+    } catch (error) {
+      logger.error(error);
     }
-
-    // open modal
-    await app.client.views.open({
-      token: context.botToken,
-      trigger_id: shortcut.trigger_id,
-      view: launch_modal,
-    });
-  } catch (error) {
-    console.error(error);
   }
-});
+);
 
 // listen for mentions of 'discount'
-app.message(/discount/i, async ({ context, message }) => {
+app.message(/discount/i, async ({ context, message, logger }) => {
   try {
     // send ephemaral message
     await app.client.chat.postEphemeral({
@@ -426,12 +436,12 @@ app.message(/discount/i, async ({ context, message }) => {
       blocks: discount_mention,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // listen for launch from ephemeral message
-app.action("launch_discount", async ({ ack, body, context }) => {
+app.action("launch_discount", async ({ ack, body, context, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -461,12 +471,12 @@ app.action("launch_discount", async ({ ack, body, context }) => {
       view: launch_modal,
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // listen for cancel from ephemeral message
-app.action("cancel_ephemeral", async ({ ack, body }) => {
+app.action("cancel_ephemeral", async ({ ack, body, logger }) => {
   await ack();
   try {
     // must use response_url to delete ephemeral messages
@@ -474,9 +484,9 @@ app.action("cancel_ephemeral", async ({ ack, body }) => {
       .post(body.response_url, {
         delete_original: "true",
       })
-      .catch((error) => console.error(error));
+      .catch((error) => logger.error(error));
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
@@ -485,118 +495,129 @@ app.action("cancel_ephemeral", async ({ ack, body }) => {
 let companyName, justification, discount;
 
 // listen for modal submission
-app.view("launch_modal_submit", async ({ ack, body, context, view }) => {
-  try {
-    // gather user input
-    companyName = view.state.values.companyName.user_input.value;
-    justification = view.state.values.justification.user_input.value;
-    discount = view.state.values.discount.user_input.value;
+app.view(
+  "launch_modal_submit",
+  async ({ ack, body, context, view, logger }) => {
+    try {
+      // gather user input
+      companyName = view.state.values.companyName.user_input.value;
+      justification = view.state.values.justification.user_input.value;
+      discount = view.state.values.discount.user_input.value;
 
-    // validate discount input
-    if (isNaN(discount)) {
-      await ack({
-        // discount input error
-        response_action: "errors",
-        errors: {
-          discount: "Please enter a number (without a % sign)",
-        },
+      // validate discount input
+      if (isNaN(discount)) {
+        await ack({
+          // discount input error
+          response_action: "errors",
+          errors: {
+            discount: "Please enter a number (without a % sign)",
+          },
+        });
+        return;
+      }
+
+      await ack();
+
+      // format new channel name
+      let channelName = companyName.replace(/\W+/g, "-").toLowerCase();
+      if (channelName.slice(-1) === "-")
+        channelName = channelName.substring(0, channelName.length - 1);
+
+      // retrieve all channels
+      const { channels } = await app.client.conversations.list({
+        token: context.botToken,
       });
-      return;
-    }
 
-    await ack();
+      // check if channel already exists
+      const existingChannel = channels.find(
+        (channel) => channel.name === `quote-approvals-${channelName}`
+      );
 
-    // format new channel name
-    let channelName = companyName.replace(/\W+/g, "-").toLowerCase();
-    if (channelName.slice(-1) === "-")
-      channelName = channelName.substring(0, channelName.length - 1);
+      if (existingChannel) {
+        // send DM with channel already exists message
+        await app.client.chat.postMessage({
+          token: context.botToken,
+          channel: body.user.id,
+          blocks: channel_exists({
+            companyName,
+            channelId: existingChannel.id,
+          }),
+        });
+        return;
+      }
 
-    // retrieve all channels
-    const { channels } = await app.client.conversations.list({
-      token: context.botToken,
-    });
+      // create channel
+      const response = await app.client.conversations.create({
+        token: context.botToken,
+        name: `quote-approvals-${channelName
+          .replace(/\W+/g, "-")
+          .toLowerCase()}`,
+        team_id: body.team.id,
+      });
 
-    // check if channel already exists
-    const existingChannel = channels.find(
-      (channel) => channel.name === `quote-approvals-${channelName}`
-    );
+      const { user_settings } = require("./settings/user_settings.json");
+      const user_settings_obj = user_settings.find(
+        (item) => item.user_id === body.user.id
+      );
 
-    if (existingChannel) {
-      // send DM with channel already exists message
+      const {
+        l1_user,
+        l2_user,
+        sales_ops_user,
+        legal_user,
+      } = user_settings_obj.approver_users;
+
+      // add users to new channel
+      await app.client.conversations.invite({
+        token: context.botToken,
+        channel: response.channel.id,
+        users: `${body.user.id},${l1_user},${l2_user},${sales_ops_user},${legal_user}`,
+      });
+
+      // notify user of new channel
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        blocks: channel_exists({ companyName, channelId: existingChannel.id }),
+        blocks: channel_created({
+          companyName,
+          channelId: response.channel.id,
+        }),
       });
-      return;
+
+      // post new discount request message to new channel
+      const newMessageResponse = await app.client.chat.postMessage({
+        token: context.botToken,
+        channel: response.channel.id,
+        blocks: channel_message({
+          user: body.user.username,
+          companyName,
+          justification,
+          discount,
+          status: 0,
+          user_settings_obj,
+        }),
+      });
+
+      // tag L1 approver in thread
+      await app.client.chat.postMessage({
+        token: context.botToken,
+        channel: newMessageResponse.channel,
+        thread_ts: newMessageResponse.message.ts,
+        blocks: thread_ask({
+          approver: l1_user,
+          approval_type: "SALES_L1",
+        }),
+      });
+    } catch (error) {
+      logger.error(error);
     }
-
-    // create channel
-    const response = await app.client.conversations.create({
-      token: context.botToken,
-      name: `quote-approvals-${channelName.replace(/\W+/g, "-").toLowerCase()}`,
-      team_id: body.team.id,
-    });
-
-    const { user_settings } = require("./settings/user_settings.json");
-    const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id
-    );
-
-    const {
-      l1_user,
-      l2_user,
-      sales_ops_user,
-      legal_user,
-    } = user_settings_obj.approver_users;
-
-    // add users to new channel
-    await app.client.conversations.invite({
-      token: context.botToken,
-      channel: response.channel.id,
-      users: `${body.user.id},${l1_user},${l2_user},${sales_ops_user},${legal_user}`,
-    });
-
-    // notify user of new channel
-    await app.client.chat.postMessage({
-      token: context.botToken,
-      channel: body.user.id,
-      blocks: channel_created({ companyName, channelId: response.channel.id }),
-    });
-
-    // post new discount request message to new channel
-    const newMessageResponse = await app.client.chat.postMessage({
-      token: context.botToken,
-      channel: response.channel.id,
-      blocks: channel_message({
-        user: body.user.username,
-        companyName,
-        justification,
-        discount,
-        status: 0,
-        user_settings_obj,
-      }),
-    });
-
-    // tag L1 approver in thread
-    await app.client.chat.postMessage({
-      token: context.botToken,
-      channel: newMessageResponse.channel,
-      thread_ts: newMessageResponse.message.ts,
-      blocks: thread_ask({
-        approver: l1_user,
-        approval_type: "SALES_L1",
-      }),
-    });
-  } catch (error) {
-    console.error(error);
   }
-});
+);
 
 /* QUOTE DETAILS 📄 */
 
 // display approval details modal
-app.action("status_details", async ({ ack, context, body }) => {
+app.action("status_details", async ({ ack, context, body, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -610,12 +631,12 @@ app.action("status_details", async ({ ack, context, body }) => {
       view: approver_details(user_settings_obj.approver_details),
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // display quote lines details modal
-app.action("quote_lines_details", async ({ ack, context, body }) => {
+app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -629,12 +650,12 @@ app.action("quote_lines_details", async ({ ack, context, body }) => {
       view: quote_line_details(user_settings_obj.quote_line_details),
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 // display deal stats modal
-app.action("deal_stats", async ({ ack, context, body }) => {
+app.action("deal_stats", async ({ ack, context, body, logger }) => {
   await ack();
   try {
     const { user_settings } = require("./settings/user_settings.json");
@@ -648,113 +669,120 @@ app.action("deal_stats", async ({ ack, context, body }) => {
       view: deal_stats(user_settings_obj.deal_stats),
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error);
   }
 });
 
 /* MESSAGE THREAD 🧵 */
 
 // listen for 'Approve' or 'Reject' button press in thread
-app.action(/^(approve|reject).*/, async ({ ack, action, context, body }) => {
-  await ack();
-  try {
-    // inform user of authority status
-    await app.client.chat.postEphemeral({
-      token: context.botToken,
-      user: body.user.id,
-      channel: body.channel.id,
-      thread_ts: body.message.thread_ts,
-      blocks: thread_error({ user: body.user.id, action: action.action_id }),
-    });
+app.action(
+  /^(approve|reject).*/,
+  async ({ ack, action, context, body, logger }) => {
+    await ack();
+    try {
+      // inform user of authority status
+      await app.client.chat.postEphemeral({
+        token: context.botToken,
+        user: body.user.id,
+        channel: body.channel.id,
+        thread_ts: body.message.thread_ts,
+        blocks: thread_error({ user: body.user.id, action: action.action_id }),
+      });
 
-    const { user_settings } = require("./settings/user_settings.json");
-    const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id
-    );
+      const { user_settings } = require("./settings/user_settings.json");
+      const user_settings_obj = user_settings.find(
+        (item) => item.user_id === body.user.id
+      );
 
-    const {
-      l1_user,
-      l2_user,
-      sales_ops_user,
-      legal_user,
-    } = user_settings_obj.approver_users;
+      const {
+        l1_user,
+        l2_user,
+        sales_ops_user,
+        legal_user,
+      } = user_settings_obj.approver_users;
 
-    await wait(3000);
+      await wait(3000);
 
-    // approve L1_SALES
-    await app.client.chat.update({
-      token: context.botToken,
-      channel: body.channel.id,
-      ts: body.message.ts,
-      blocks: thread_approved({
-        approver: l1_user,
-        approval_level: "SALES_L1",
-      }),
-    });
+      // approve L1_SALES
+      await app.client.chat.update({
+        token: context.botToken,
+        channel: body.channel.id,
+        ts: body.message.ts,
+        blocks: thread_approved({
+          approver: l1_user,
+          approval_level: "SALES_L1",
+        }),
+      });
 
-    // update status of original message
-    await app.client.chat.update({
-      token: context.botToken,
-      channel: body.channel.id,
-      ts: body.message.thread_ts,
-      blocks: channel_message({
+      // update status of original message
+      await app.client.chat.update({
+        token: context.botToken,
+        channel: body.channel.id,
+        ts: body.message.thread_ts,
+        blocks: channel_message({
+          user: body.user.username,
+          companyName,
+          justification,
+          discount,
+          status: 1,
+          user_settings_obj,
+        }),
+      });
+
+      // L2 approval
+      await sendApprovedMessage({
+        token: context.botToken,
+        channel: body.channel.id,
+        ts: body.message.thread_ts,
+        approver: l2_user,
+        approval_level: "L2_SALES",
+        status: 2,
         user: body.user.username,
-        companyName,
-        justification,
-        discount,
-        status: 1,
         user_settings_obj,
-      }),
-    });
+      });
 
-    // L2 approval
-    await sendApprovedMessage({
-      token: context.botToken,
-      channel: body.channel.id,
-      ts: body.message.thread_ts,
-      approver: l2_user,
-      approval_level: "L2_SALES",
-      status: 2,
-      user: body.user.username,
-      user_settings_obj,
-    });
+      // SALES_OPS approval
+      await sendApprovedMessage({
+        token: context.botToken,
+        channel: body.channel.id,
+        ts: body.message.thread_ts,
+        approver: sales_ops_user,
+        approval_level: "SALES_OPS",
+        status: 3,
+        user: body.user.username,
+        user_settings_obj,
+      });
 
-    // SALES_OPS approval
-    await sendApprovedMessage({
-      token: context.botToken,
-      channel: body.channel.id,
-      ts: body.message.thread_ts,
-      approver: sales_ops_user,
-      approval_level: "SALES_OPS",
-      status: 3,
-      user: body.user.username,
-      user_settings_obj,
-    });
+      // LEGAL approval
+      await sendApprovedMessage({
+        token: context.botToken,
+        channel: body.channel.id,
+        ts: body.message.thread_ts,
+        approver: legal_user,
+        approval_level: "LEGAL",
+        status: 4,
+        user: body.user.username,
+        user_settings_obj,
+      });
 
-    // LEGAL approval
-    await sendApprovedMessage({
-      token: context.botToken,
-      channel: body.channel.id,
-      ts: body.message.thread_ts,
-      approver: legal_user,
-      approval_level: "LEGAL",
-      status: 4,
-      user: body.user.username,
-      user_settings_obj,
-    });
-
-    // notify user that discount has been approved
-    await app.client.chat.postMessage({
-      token: context.botToken,
-      channel: body.user.id,
-      blocks: discount_approved(
-        companyName,
-        user_settings_obj.sales_order_form.url
-      ),
-    });
-  } catch (error) {
-    console.error(error);
+      // notify user that discount has been approved
+      await app.client.chat.postMessage({
+        token: context.botToken,
+        channel: body.user.id,
+        blocks: discount_approved(
+          companyName,
+          user_settings_obj.sales_order_form.url
+        ),
+      });
+    } catch (error) {
+      logger.error(error);
+    }
   }
+);
+
+app.error(async (error) => {
+  console.error(error);
 });
 
 // start app
