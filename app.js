@@ -141,11 +141,11 @@ app.event("app_home_opened", async ({ body, context, logger }) => {
 
     // check if approver users exist for user in workspace
     const index = user_settings.findIndex((item) => {
-      return item.user_id === body.event.user;
+      return item.team_id === body.team_id;
     });
 
     if (index === -1) {
-      user_settings.push(new_user(body.event.user, body.team_id));
+      user_settings.push(new_user(body.team_id));
 
       // save new user settings
       fs.writeFile(
@@ -172,11 +172,11 @@ app.event("app_home_opened", async ({ body, context, logger }) => {
 app.action(
   /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image|edit_sales_order_form_link).*/,
   async ({ ack, action, body, context, logger }) => {
-    await ack();
     try {
+      await ack();
       const { user_settings } = require("./settings/user_settings.json");
       const user_settings_obj = user_settings.find((item) => {
-        return item.user_id === body.user.id;
+        return item.team_id === body.team.id;
       });
 
       // push values to edit modal
@@ -195,11 +195,11 @@ app.action(
 app.view(
   /^(save_approver_users|save_proposed_structure|save_quote_lines|save_approver_details|save_quote_line_details|save_deal_stats|save_platform_image|save_sales_order_form_link).*/,
   async ({ ack, body, view, logger }) => {
-    await ack();
     try {
+      await ack();
       const { user_settings } = require("./settings/user_settings.json");
       const index = user_settings.findIndex(
-        (item) => item.user_id === body.user.id
+        (item) => item.team_id === body.team.id
       );
 
       const payload = view.state.values;
@@ -310,14 +310,14 @@ app.view(
 
 // restore config defaults
 app.action("restore_defaults", async ({ ack, body, logger }) => {
-  await ack();
   try {
+    await ack();
     const { user_settings } = require("./settings/user_settings.json");
     const index = user_settings.findIndex((item) => {
-      return item.user_id === body.user.id;
+      return item.team_id === body.team.id;
     });
 
-    user_settings[index] = new_user(body.user.id, body.team.id);
+    user_settings[index] = new_user(body.team.id);
 
     // restore user settings
     fs.writeFile(
@@ -348,11 +348,11 @@ app.action(
 
 // listen for slash command
 app.command("/discount", async ({ ack, command, context, logger }) => {
-  await ack();
   try {
+    await ack();
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
-      return item.user_id === command.user_id;
+      return item.team_id === command.team_id;
     });
     const users_configured = isApproversConfigured(approver_users);
 
@@ -385,11 +385,11 @@ app.command("/discount", async ({ ack, command, context, logger }) => {
 app.shortcut(
   "discount_request",
   async ({ ack, body, context, shortcut, logger }) => {
-    await ack();
     try {
+      await ack();
       const { user_settings } = require("./settings/user_settings.json");
       const { approver_users } = user_settings.find((item) => {
-        return item.user_id === body.user.id;
+        return item.team_id === body.team.id;
       });
       const users_configured = isApproversConfigured(approver_users);
 
@@ -406,7 +406,7 @@ app.shortcut(
           token: context.botToken,
           channel: body.user.id,
           blocks: redirect_home({
-            workspace_id: body.user.team_id,
+            workspace_id: body.team.id,
             app_id,
           }),
         });
@@ -442,11 +442,12 @@ app.message(/discount/i, async ({ context, message, logger }) => {
 
 // listen for launch from ephemeral message
 app.action("launch_discount", async ({ ack, body, context, logger }) => {
-  await ack();
   try {
+    await ack();
+    console.log(body);
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
-      return item.user_id === body.user.id;
+      return item.team_id === body.team.id;
     });
     const users_configured = isApproversConfigured(approver_users);
 
@@ -457,7 +458,7 @@ app.action("launch_discount", async ({ ack, body, context, logger }) => {
         channel: body.channel.id,
         user: body.user.id,
         blocks: redirect_home({
-          workspace_id: body.user.team_id,
+          workspace_id: body.team.id,
           app_id: body.api_app_id,
         }),
       });
@@ -477,8 +478,8 @@ app.action("launch_discount", async ({ ack, body, context, logger }) => {
 
 // listen for cancel from ephemeral message
 app.action("cancel_ephemeral", async ({ ack, body, logger }) => {
-  await ack();
   try {
+    await ack();
     // must use response_url to delete ephemeral messages
     axios
       .post(body.response_url, {
@@ -557,7 +558,7 @@ app.view(
 
       const { user_settings } = require("./settings/user_settings.json");
       const user_settings_obj = user_settings.find(
-        (item) => item.user_id === body.user.id
+        (item) => item.team_id === body.team.id
       );
 
       const {
@@ -618,11 +619,11 @@ app.view(
 
 // display approval details modal
 app.action("status_details", async ({ ack, context, body, logger }) => {
-  await ack();
   try {
+    await ack();
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id
+      (item) => item.team_id === body.team.id
     );
 
     await app.client.views.open({
@@ -637,11 +638,11 @@ app.action("status_details", async ({ ack, context, body, logger }) => {
 
 // display quote lines details modal
 app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
-  await ack();
   try {
+    await ack();
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id
+      (item) => item.team_id === body.team.id
     );
 
     await app.client.views.open({
@@ -656,11 +657,11 @@ app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
 
 // display deal stats modal
 app.action("deal_stats", async ({ ack, context, body, logger }) => {
-  await ack();
   try {
+    await ack();
     const { user_settings } = require("./settings/user_settings.json");
     const user_settings_obj = user_settings.find(
-      (item) => item.user_id === body.user.id
+      (item) => item.team_id === body.team.id
     );
 
     await app.client.views.open({
@@ -679,8 +680,8 @@ app.action("deal_stats", async ({ ack, context, body, logger }) => {
 app.action(
   /^(approve|reject).*/,
   async ({ ack, action, context, body, logger }) => {
-    await ack();
     try {
+      await ack();
       // inform user of authority status
       await app.client.chat.postEphemeral({
         token: context.botToken,
@@ -692,7 +693,7 @@ app.action(
 
       const { user_settings } = require("./settings/user_settings.json");
       const user_settings_obj = user_settings.find(
-        (item) => item.user_id === body.user.id
+        (item) => item.team_id === body.team.id
       );
 
       const {

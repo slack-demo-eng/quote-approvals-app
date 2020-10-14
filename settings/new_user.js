@@ -1,7 +1,6 @@
 const moment = require("moment");
 
-const new_user = (user_id, team_id) => ({
-  user_id,
+const new_user = (team_id) => ({
   team_id,
   approver_users: {
     l1_user: "",
