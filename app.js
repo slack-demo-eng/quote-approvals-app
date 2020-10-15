@@ -444,7 +444,6 @@ app.message(/discount/i, async ({ context, message, logger }) => {
 app.action("launch_discount", async ({ ack, body, context, logger }) => {
   try {
     await ack();
-    console.log(body);
     const { user_settings } = require("./settings/user_settings.json");
     const { approver_users } = user_settings.find((item) => {
       return item.team_id === body.team.id;
