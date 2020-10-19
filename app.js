@@ -31,10 +31,8 @@ const {
 
 // import database functions
 const {
-  storeTokens,
-  storeLocalInstallation,
-  retrieveTokens,
-  fetchLocalInstallation,
+  storeInstallationInDb,
+  fetchInstallationFromDb,
 } = require("./db/helpers");
 
 // initialize env variables
@@ -61,12 +59,10 @@ const app = new App({
   },
   installationStore: {
     storeInstallation: async (installation) => {
-      await storeTokens(installation);
-      return storeLocalInstallation(installation);
+      return await storeInstallationInDb(installation);
     },
     fetchInstallation: async ({ teamId }) => {
-      const tokens = await retrieveTokens(teamId);
-      const installation = fetchLocalInstallation(tokens, teamId);
+      const installation = await fetchInstallationFromDb(teamId);
       return installation;
     },
   },
