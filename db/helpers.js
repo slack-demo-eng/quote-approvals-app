@@ -1,10 +1,56 @@
 const mysql = require("mysql");
 const dotenv = require("dotenv");
 const moment = require("moment");
-const fs = require("fs");
 
 // initialize env variables
 dotenv.config();
+
+// installation object
+const installationObject = ({
+  team_id,
+  team_name,
+  user_token,
+  user_id,
+  bot_token,
+  bot_user_id,
+  bot_id,
+  org_id,
+  org_domain,
+}) => ({
+  team: {
+    id: team_id,
+    name: team_name,
+  },
+  appId: process.env.APP_ID,
+  user: {
+    token: user_token,
+    scopes: ["channels:history"],
+    id: user_id,
+  },
+  bot: {
+    scopes: [
+      "channels:history",
+      "channels:manage",
+      "chat:write",
+      "chat:write.public",
+      "commands",
+      "users:read",
+      "channels:read",
+      "links:read",
+    ],
+    token: bot_token,
+    userId: bot_user_id,
+    id: bot_id,
+  },
+  tokenType: "bot",
+  enterprise:
+    org_id !== "NULL"
+      ? {
+          id: org_id,
+          name: org_domain,
+        }
+      : undefined,
+});
 
 // connect to db
 const connection = mysql.createPool({
@@ -15,14 +61,11 @@ const connection = mysql.createPool({
   database: process.env.DB_DATABASE,
 });
 
-const appName = "QUOTE-APPROVALS";
-
 // store tokens in db
-const storeTokens = (installation) => {
-  let sql =
-    "INSERT INTO demo_app_tokens VALUES (?, ?, ?, ?, ?, ? ,?, ?, ?) ON DUPLICATE KEY UPDATE user_token= ?, bot_token = ?, installed_on = ?";
+const storeInstallationInDb = (installation) => {
+  let sql = `INSERT INTO ${process.env.DB_TABLE_NAME} VALUES (?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE user_token= ?, bot_token = ?, installed_on = ?`;
   const inserts = [
-    appName,
+    process.env.APP_NAME,
     installation.user.id,
     installation.team.id,
     installation.team.name,
@@ -31,6 +74,8 @@ const storeTokens = (installation) => {
     installation.user.token,
     installation.bot.token,
     moment().format("YYYY-MM-DD HH:mm:ss"),
+    installation.bot.userId,
+    installation.bot.id,
     installation.user.token,
     installation.bot.token,
     moment().format("YYYY-MM-DD HH:mm:ss"),
@@ -47,39 +92,10 @@ const storeTokens = (installation) => {
   });
 };
 
-// store installation object locally inside installations.json
-const storeLocalInstallation = (installation) => {
-  const { installations } = require("./installations");
-
-  const index = installations.findIndex((existingInstallation) => {
-    return existingInstallation.user.id === installation.user.id;
-  });
-
-  // strip out tokens
-  installation.user.token = "";
-  installation.bot.token = "";
-
-  // update existing installation if exists
-  if (~index) {
-    installations[index] = installation;
-  } else {
-    installations.push(installation);
-  }
-
-  fs.writeFile(
-    "./db/installations.json",
-    JSON.stringify({ installations }, null, 2),
-    (err) => {
-      if (err) console.error(error);
-    }
-  );
-};
-
 // retrieve tokens from db
-const retrieveTokens = (teamId) => {
-  let sql =
-    "SELECT user_token, bot_token FROM demo_app_tokens WHERE team_id = ? AND app_name = ?";
-  const inserts = [teamId, appName];
+const fetchInstallationFromDb = (teamId) => {
+  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE team_id = ? AND app_name = ?`;
+  const inserts = [teamId, process.env.APP_NAME];
   sql = mysql.format(sql, inserts);
 
   return new Promise((resolve, reject) => {
@@ -88,29 +104,13 @@ const retrieveTokens = (teamId) => {
         reject(err);
       }
       if (result) {
-        resolve(result[0]);
+        resolve(installationObject(result[0]));
       }
     });
   });
 };
 
-// fetch installation from installations.json and attach tokens
-const fetchLocalInstallation = (tokens, teamId) => {
-  const { installations } = require("./installations.json");
-  const installation = installations.find((item) => {
-    return item.team.id === teamId;
-  });
-
-  if (installation && installation.bot && installation.user) {
-    installation.bot.token = tokens.bot_token;
-    installation.user.token = tokens.user_token;
-  }
-  return installation;
-};
-
 module.exports = {
-  storeTokens,
-  storeLocalInstallation,
-  retrieveTokens,
-  fetchLocalInstallation,
+  storeInstallationInDb,
+  fetchInstallationFromDb,
 };
