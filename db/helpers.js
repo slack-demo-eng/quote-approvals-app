@@ -103,7 +103,7 @@ const fetchInstallationFromDb = (teamId) => {
       if (err) {
         reject(err);
       }
-      if (result) {
+      if (result && result[0]) {
         resolve(installationObject(result[0]));
       }
     });
