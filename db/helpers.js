@@ -93,7 +93,7 @@ const storeInstallationInDb = (installation) => {
 };
 
 // retrieve tokens from db
-const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
+const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
   let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
     enterpriseId ? "org_id" : "team_id"
   } = ? AND app_name = ?`;
@@ -115,16 +115,15 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
           );
           if (index) {
             console.log("grabbing enterprise team install");
-            resolve(installationObject(result[index]));
+            return resolve(installationObject(result[index]));
           }
           console.log("grabbing enterprise install");
-          resolve(installationObject(result[0]));
+          return resolve(installationObject(result[0]));
         }
         console.log("grabbing team install");
-        resolve(installationObject(result[0]));
+        return resolve(installationObject(result[0]));
       }
     });
-  });
 };
 
 module.exports = {
