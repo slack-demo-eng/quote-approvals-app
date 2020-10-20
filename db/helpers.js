@@ -113,6 +113,7 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
           const index = result.findIndex(
             (teamInstallation) => teamInstallation.team_id === teamId
           );
+          console.log(index);
           if (index) {
             console.log("grabbing enterprise team install");
             console.log(result[index]);
