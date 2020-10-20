@@ -99,6 +99,7 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
   } = ${enterpriseId ? `${enterpriseId}` : `${teamId}`} AND app_name = ${
     process.env.APP_NAME
   }`;
+  console.log(sql);
 
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
