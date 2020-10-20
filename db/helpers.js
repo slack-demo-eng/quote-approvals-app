@@ -124,6 +124,7 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
         return resolve(installationObject(result[0]));
       }
     });
+  });
 };
 
 module.exports = {
