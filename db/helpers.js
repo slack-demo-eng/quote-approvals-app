@@ -101,7 +101,7 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
     ? [enterpriseId, process.env.APP_NAME]
     : [(teamId, process.env.APP_NAME)];
   sql = mysql.format(sql, inserts);
-  console.log(sql);
+  console.log("sql", sql);
 
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
@@ -113,9 +113,14 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
           const index = result.findIndex(
             (teamInstallation) => teamInstallation.team_id === teamId
           );
-          if (index) resolve(installationObject(result[index]));
+          if (index) {
+            console.log("grabbing enterprise team install");
+            resolve(installationObject(result[index]));
+          }
+          console.log("grabbing enterprise install");
           resolve(installationObject(result[0]));
         }
+        console.log("grabbing team install");
         resolve(installationObject(result[0]));
       }
     });
