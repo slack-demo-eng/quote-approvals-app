@@ -106,7 +106,7 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
       if (err) {
-        reject(err);
+        return reject(err);
       }
       if (result && result[0]) {
         if (enterpriseId) {
@@ -115,12 +115,15 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
           );
           if (index) {
             console.log("grabbing enterprise team install");
+            console.log(result[index]);
             return resolve(installationObject(result[index]));
           }
           console.log("grabbing enterprise install");
+          console.log(result[0]);
           return resolve(installationObject(result[0]));
         }
         console.log("grabbing team install");
+        console.log(result[0]);
         return resolve(installationObject(result[0]));
       }
     });
