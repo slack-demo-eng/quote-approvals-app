@@ -93,9 +93,11 @@ const storeInstallationInDb = (installation) => {
 };
 
 // retrieve tokens from db
-const fetchInstallationFromDb = (teamId) => {
-  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE team_id = ? AND app_name = ?`;
-  const inserts = [teamId, process.env.APP_NAME];
+const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
+  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
+    enterpriseId ? "org" : "team"
+  }_id = ? AND app_name = ?`;
+  const inserts = [id, process.env.APP_NAME];
   sql = mysql.format(sql, inserts);
 
   return new Promise((resolve, reject) => {
@@ -104,6 +106,13 @@ const fetchInstallationFromDb = (teamId) => {
         reject(err);
       }
       if (result && result[0]) {
+        if (enterpriseId) {
+          const index = result.findIndex(
+            (teamInstallation) => teamInstallation.team_id === teamId
+          );
+          if (index) resolve(installationObject(result[index]));
+          resolve(installationObject(result[0]));
+        }
         resolve(installationObject(result[0]));
       }
     });
