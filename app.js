@@ -62,6 +62,7 @@ const app = new App({
       return await storeInstallationInDb(installation);
     },
     fetchInstallation: async ({ teamId }) => {
+      console.log(teamId);
       return await fetchInstallationFromDb(teamId);
     },
   },
