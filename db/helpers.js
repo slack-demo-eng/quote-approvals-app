@@ -99,7 +99,7 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
   } = ? AND app_name = ?`;
   const inserts = enterpriseId
     ? [enterpriseId, process.env.APP_NAME]
-    : [(teamId, process.env.APP_NAME)];
+    : [teamId, process.env.APP_NAME];
   sql = mysql.format(sql, inserts);
   console.log("sql", sql);
 
