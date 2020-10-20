@@ -94,11 +94,11 @@ const storeInstallationInDb = (installation) => {
 
 // retrieve tokens from db
 const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
-  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
+  const sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
     enterpriseId ? "org" : "team"
-  }_id = ? AND app_name = ?`;
-  const inserts = [id, process.env.APP_NAME];
-  sql = mysql.format(sql, inserts);
+  }_id = ${enterpriseId ? enterpriseId : teamId} AND app_name = ${
+    process.env.APP_NAME
+  }`;
 
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
