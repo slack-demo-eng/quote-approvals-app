@@ -95,8 +95,8 @@ const storeInstallationInDb = (installation) => {
 // retrieve tokens from db
 const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
   const sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
-    enterpriseId ? "org" : "team"
-  }_id = ${enterpriseId ? enterpriseId : teamId} AND app_name = ${
+    enterpriseId ? "org_id" : "team_id"
+  } = ${enterpriseId ? `${enterpriseId}` : `${teamId}`} AND app_name = ${
     process.env.APP_NAME
   }`;
 
