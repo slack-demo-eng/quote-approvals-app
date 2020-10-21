@@ -112,7 +112,6 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
           const index = result.findIndex(
             (teamInstallation) => teamInstallation.team_id === teamId
           );
-          console.log(index);
           if (index !== -1) {
             // return current workspace install
             return resolve(installationObject(result[index]));
