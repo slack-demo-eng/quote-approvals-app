@@ -8,7 +8,7 @@
   },
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "NODE_ENV=prod node app.js"
   },
   "author": "georgefairbairn",
   "license": "ISC",

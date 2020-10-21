@@ -33,10 +33,12 @@ const {
 const {
   storeInstallationInDb,
   fetchInstallationFromDb,
+  storeUserSettings,
+  fetchUserSettings,
 } = require("./db/helpers");
 
 // initialize env variables
-dotenv.config();
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
 
 // intialize app
 const app = new App({
@@ -59,9 +61,18 @@ const app = new App({
   },
   installationStore: {
     storeInstallation: async (installation) => {
-      return await storeInstallationInDb(installation);
+      // store installation in database
+      await storeInstallationInDb(installation);
+
+      // store default user settings in database
+      const enterpriseId = installation.enterprise
+        ? installation.enterprise.id
+        : undefined;
+      const settings = new_user(installation.team.id, enterpriseId);
+      return await storeUserSettings(settings);
     },
     fetchInstallation: async ({ teamId, enterpriseId }) => {
+      // fetch installation from database
       const installation = await fetchInstallationFromDb({
         teamId,
         enterpriseId,
@@ -99,7 +110,7 @@ const sendApprovedMessage = async ({
   approval_level,
   status,
   user,
-  user_settings_obj,
+  settings,
 }) => {
   try {
     await wait(3000);
@@ -123,7 +134,7 @@ const sendApprovedMessage = async ({
         justification,
         discount,
         status,
-        user_settings_obj,
+        settings,
       }),
     });
   } catch (error) {
@@ -136,26 +147,6 @@ const sendApprovedMessage = async ({
 // listen for app home tab opened
 app.event("app_home_opened", async ({ body, context, logger }) => {
   try {
-    const { user_settings } = require("./settings/user_settings.json");
-
-    // check if approver users exist for user in workspace
-    const index = user_settings.findIndex((item) => {
-      return item.team_id === body.team_id;
-    });
-
-    if (index === -1) {
-      user_settings.push(new_user(body.team_id));
-
-      // save new user settings
-      fs.writeFile(
-        "./settings/user_settings.json",
-        JSON.stringify({ user_settings }, null, 2),
-        (err) => {
-          if (err) logger.error(error);
-        }
-      );
-    }
-
     // load app home
     await app.client.views.publish({
       token: context.botToken,
@@ -173,16 +164,25 @@ app.action(
   async ({ ack, action, body, context, logger }) => {
     try {
       await ack();
-      const { user_settings } = require("./settings/user_settings.json");
-      const user_settings_obj = user_settings.find((item) => {
-        return item.team_id === body.team.id;
-      });
+      let settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
+      );
+
+      if (!settings) {
+        const newUserSettings = new_user(body.team.id, body.team.enterprise_id);
+        await storeUserSettings(newUserSettings);
+        settings = await fetchUserSettings(
+          body.team.id,
+          body.team.enterprise_id
+        );
+      }
 
       // push values to edit modal
       await app.client.views.open({
         token: context.botToken,
         trigger_id: body.trigger_id,
-        view: modals[action.action_id](user_settings_obj),
+        view: modals[action.action_id](settings),
       });
     } catch (error) {
       logger.error(error);
@@ -196,16 +196,16 @@ app.view(
   async ({ ack, body, view, logger }) => {
     try {
       await ack();
-      const { user_settings } = require("./settings/user_settings.json");
-      const index = user_settings.findIndex(
-        (item) => item.team_id === body.team.id
+      const settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
       );
 
       const payload = view.state.values;
 
       // save new approver users info
       if (view.callback_id === "save_approver_users") {
-        user_settings[index].approver_users = {
+        settings.approver_users = {
           l1_user: payload.l1_user_block.l1_user.selected_user,
           l2_user: payload.l2_user_block.l2_user.selected_user,
           sales_ops_user:
@@ -216,7 +216,7 @@ app.view(
 
       // save new proposed structure info
       if (view.callback_id === "save_proposed_structure") {
-        user_settings[index].proposed_structure = {
+        settings.proposed_structure = {
           close_date: payload.close_date_block.close_date.selected_date,
           acv_churn: payload.acv_churn_block.acv_churn.value,
           billings: payload.billings_block.billings.value,
@@ -231,14 +231,14 @@ app.view(
 
       // save new quote lines info
       if (view.callback_id === "save_quote_lines") {
-        user_settings[index].quote_lines = {
+        settings.quote_lines = {
           licenses: payload.licenses_block.licenses.value,
         };
       }
 
       // save new approver details
       if (view.callback_id === "save_approver_details") {
-        user_settings[index].approver_details = {
+        settings.approver_details = {
           l1_details: payload.l1_details_block.l1_details.value,
           l2_details: payload.l2_details_block.l2_details.value,
           sales_ops_details:
@@ -249,7 +249,7 @@ app.view(
 
       // save new quote line details
       if (view.callback_id === "save_quote_line_details") {
-        user_settings[index].quote_line_details = {
+        settings.quote_line_details = {
           product_name: payload.product_name_block.product_name.value,
           quantity: payload.quantity_block.quantity.value,
           start_date: payload.start_date_block.start_date.selected_date,
@@ -261,7 +261,7 @@ app.view(
 
       // save new deal stats
       if (view.callback_id === "save_deal_stats") {
-        user_settings[index].deal_stats = {
+        settings.deal_stats = {
           employee_count: payload.employee_count_block.employee_count.value,
           active_seats: payload.active_seats_block.active_seats.value,
           quote: payload.quote_block.quote.value,
@@ -282,25 +282,20 @@ app.view(
 
       // save platform image
       if (view.callback_id === "save_platform_image") {
-        user_settings[index].platform_image = {
+        settings.platform_image = {
           url: payload.url_block.url.value,
         };
       }
 
       // save sales order form link
       if (view.callback_id === "save_sales_order_form_link") {
-        user_settings[index].sales_order_form = {
+        settings.sales_order_form = {
           url: payload.url_block.url.value,
         };
       }
 
-      fs.writeFile(
-        "./settings/user_settings.json",
-        JSON.stringify({ user_settings }, null, 2),
-        (err) => {
-          if (err) logger.error(error);
-        }
-      );
+      // store new user settings in database
+      await storeUserSettings(settings);
     } catch (error) {
       logger.error(error);
     }
@@ -311,21 +306,8 @@ app.view(
 app.action("restore_defaults", async ({ ack, body, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const index = user_settings.findIndex((item) => {
-      return item.team_id === body.team.id;
-    });
-
-    user_settings[index] = new_user(body.team.id);
-
-    // restore user settings
-    fs.writeFile(
-      "./settings/user_settings.json",
-      JSON.stringify({ user_settings }, null, 2),
-      (err) => {
-        if (err) logger.error(error);
-      }
-    );
+    const settings = new_user(body.team.id, body.team.enterprise_id);
+    return await storeUserSettings(settings);
   } catch (error) {
     logger.error(error);
   }
@@ -349,11 +331,12 @@ app.action(
 app.command("/discount", async ({ ack, command, context, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const { approver_users } = user_settings.find((item) => {
-      return item.team_id === command.team_id;
-    });
-    const users_configured = isApproversConfigured(approver_users);
+    const settings = await fetchUserSettings(
+      command.team_id,
+      command.enterprise_id
+    );
+
+    const users_configured = isApproversConfigured(settings.approver_users);
 
     // send ephemeral message if approvers not configured
     if (!users_configured) {
@@ -386,11 +369,12 @@ app.shortcut(
   async ({ ack, body, context, shortcut, logger }) => {
     try {
       await ack();
-      const { user_settings } = require("./settings/user_settings.json");
-      const { approver_users } = user_settings.find((item) => {
-        return item.team_id === body.team.id;
-      });
-      const users_configured = isApproversConfigured(approver_users);
+      const settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
+      );
+
+      const users_configured = isApproversConfigured(settings.approver_users);
 
       // send DM to user if approvers not configured
       if (!users_configured) {
@@ -443,11 +427,12 @@ app.message(/discount/i, async ({ context, message, logger }) => {
 app.action("launch_discount", async ({ ack, body, context, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const { approver_users } = user_settings.find((item) => {
-      return item.team_id === body.team.id;
-    });
-    const users_configured = isApproversConfigured(approver_users);
+    const settings = await fetchUserSettings(
+      body.team.id,
+      body.team.enterprise_id
+    );
+
+    const users_configured = isApproversConfigured(settings.approver_users);
 
     // send ephemeral message if approvers not configured
     if (!users_configured) {
@@ -554,9 +539,9 @@ app.view(
         team_id: body.team.id,
       });
 
-      const { user_settings } = require("./settings/user_settings.json");
-      const user_settings_obj = user_settings.find(
-        (item) => item.team_id === body.team.id
+      const settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
       );
 
       const {
@@ -564,7 +549,7 @@ app.view(
         l2_user,
         sales_ops_user,
         legal_user,
-      } = user_settings_obj.approver_users;
+      } = settings.approver_users;
 
       // add users to new channel
       await app.client.conversations.invite({
@@ -593,7 +578,7 @@ app.view(
           justification,
           discount,
           status: 0,
-          user_settings_obj,
+          settings,
         }),
       });
 
@@ -619,15 +604,15 @@ app.view(
 app.action("status_details", async ({ ack, context, body, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const user_settings_obj = user_settings.find(
-      (item) => item.team_id === body.team.id
+    const settings = await fetchUserSettings(
+      body.team.id,
+      body.team.enterprise_id
     );
 
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: approver_details(user_settings_obj.approver_details),
+      view: approver_details(settings.approver_details),
     });
   } catch (error) {
     logger.error(error);
@@ -638,15 +623,15 @@ app.action("status_details", async ({ ack, context, body, logger }) => {
 app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const user_settings_obj = user_settings.find(
-      (item) => item.team_id === body.team.id
+    const settings = await fetchUserSettings(
+      body.team.id,
+      body.team.enterprise_id
     );
 
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: quote_line_details(user_settings_obj.quote_line_details),
+      view: quote_line_details(settings.quote_line_details),
     });
   } catch (error) {
     logger.error(error);
@@ -657,15 +642,15 @@ app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
 app.action("deal_stats", async ({ ack, context, body, logger }) => {
   try {
     await ack();
-    const { user_settings } = require("./settings/user_settings.json");
-    const user_settings_obj = user_settings.find(
-      (item) => item.team_id === body.team.id
+    const settings = await fetchUserSettings(
+      body.team.id,
+      body.team.enterprise_id
     );
 
     await app.client.views.open({
       token: context.botToken,
       trigger_id: body.trigger_id,
-      view: deal_stats(user_settings_obj.deal_stats),
+      view: deal_stats(settings.deal_stats),
     });
   } catch (error) {
     logger.error(error);
@@ -689,9 +674,9 @@ app.action(
         blocks: thread_error({ user: body.user.id, action: action.action_id }),
       });
 
-      const { user_settings } = require("./settings/user_settings.json");
-      const user_settings_obj = user_settings.find(
-        (item) => item.team_id === body.team.id
+      const settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
       );
 
       const {
@@ -699,7 +684,7 @@ app.action(
         l2_user,
         sales_ops_user,
         legal_user,
-      } = user_settings_obj.approver_users;
+      } = settings.approver_users;
 
       await wait(3000);
 
@@ -725,7 +710,7 @@ app.action(
           justification,
           discount,
           status: 1,
-          user_settings_obj,
+          settings,
         }),
       });
 
@@ -738,7 +723,7 @@ app.action(
         approval_level: "L2_SALES",
         status: 2,
         user: body.user.username,
-        user_settings_obj,
+        settings,
       });
 
       // SALES_OPS approval
@@ -750,7 +735,7 @@ app.action(
         approval_level: "SALES_OPS",
         status: 3,
         user: body.user.username,
-        user_settings_obj,
+        settings,
       });
 
       // LEGAL approval
@@ -762,17 +747,14 @@ app.action(
         approval_level: "LEGAL",
         status: 4,
         user: body.user.username,
-        user_settings_obj,
+        settings,
       });
 
       // notify user that discount has been approved
       await app.client.chat.postMessage({
         token: context.botToken,
         channel: body.user.id,
-        blocks: discount_approved(
-          companyName,
-          user_settings_obj.sales_order_form.url
-        ),
+        blocks: discount_approved(companyName, settings.sales_order_form.url),
       });
     } catch (error) {
       logger.error(error);
