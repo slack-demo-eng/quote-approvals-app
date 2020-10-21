@@ -432,7 +432,7 @@ module.exports = {
     justification,
     discount,
     status,
-    user_settings_obj,
+    settings,
   }) => [
     {
       type: "section",
@@ -442,7 +442,7 @@ module.exports = {
       },
       accessory: {
         type: "image",
-        image_url: user_settings_obj.platform_image.url,
+        image_url: settings.platform_image.url,
         alt_text: "salesforce",
       },
     },
@@ -495,7 +495,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.close_date,
+          text: settings.proposed_structure.close_date,
         },
         {
           type: "mrkdwn",
@@ -503,7 +503,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.acv_churn,
+          text: settings.proposed_structure.acv_churn,
         },
         {
           type: "mrkdwn",
@@ -511,7 +511,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.billings,
+          text: settings.proposed_structure.billings,
         },
         {
           type: "mrkdwn",
@@ -519,7 +519,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.tcv,
+          text: settings.proposed_structure.tcv,
         },
         {
           type: "mrkdwn",
@@ -527,7 +527,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.subscription_term,
+          text: settings.proposed_structure.subscription_term,
         },
       ],
     },
@@ -548,7 +548,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.payment_terms,
+          text: settings.proposed_structure.payment_terms,
         },
         {
           type: "mrkdwn",
@@ -556,7 +556,7 @@ module.exports = {
         },
         {
           type: "plain_text",
-          text: user_settings_obj.proposed_structure.payment_frequency,
+          text: settings.proposed_structure.payment_frequency,
         },
       ],
     },
@@ -605,7 +605,7 @@ module.exports = {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${user_settings_obj.quote_lines.licenses}* x licenses with \`${discount}%\` discount`,
+        text: `*${settings.quote_lines.licenses}* x licenses with \`${discount}%\` discount`,
       },
       accessory: {
         type: "button",
