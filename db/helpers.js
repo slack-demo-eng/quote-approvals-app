@@ -101,7 +101,6 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
     ? [enterpriseId, process.env.APP_NAME]
     : [teamId, process.env.APP_NAME];
   sql = mysql.format(sql, inserts);
-  console.log("sql", sql);
 
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
@@ -115,16 +114,13 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
           );
           console.log(index);
           if (index !== -1) {
-            console.log("grabbing enterprise team install");
-            console.log(result[index]);
+            // return current workspace install
             return resolve(installationObject(result[index]));
           }
-          console.log("grabbing enterprise install");
-          console.log(result[0]);
+          // return org install if in workspace without install
           return resolve(installationObject(result[0]));
         }
-        console.log("grabbing team install");
-        console.log(result[0]);
+        // return workspace install for non-enterprise
         return resolve(installationObject(result[0]));
       }
     });
