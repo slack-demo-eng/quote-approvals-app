@@ -93,18 +93,35 @@ const storeInstallationInDb = (installation) => {
 };
 
 // retrieve tokens from db
-const fetchInstallationFromDb = (teamId) => {
-  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE team_id = ? AND app_name = ?`;
-  const inserts = [teamId, process.env.APP_NAME];
+const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
+  let sql = `SELECT * FROM ${process.env.DB_TABLE_NAME} WHERE ${
+    enterpriseId ? "org_id" : "team_id"
+  } = ? AND app_name = ?`;
+  const inserts = enterpriseId
+    ? [enterpriseId, process.env.APP_NAME]
+    : [teamId, process.env.APP_NAME];
   sql = mysql.format(sql, inserts);
 
   return new Promise((resolve, reject) => {
     connection.query(sql, (err, result) => {
       if (err) {
-        reject(err);
+        return reject(err);
       }
-      if (result && result[0]) {
-        resolve(installationObject(result[0]));
+      if (result.length > 0) {
+        if (enterpriseId) {
+          const index = result.findIndex(
+            (teamInstallation) => teamInstallation.team_id === teamId
+          );
+          console.log(index);
+          if (index !== -1) {
+            // return current workspace install
+            return resolve(installationObject(result[index]));
+          }
+          // return org install if in workspace without install
+          return resolve(installationObject(result[0]));
+        }
+        // return workspace install for non-enterprise
+        return resolve(installationObject(result[0]));
       }
     });
   });
