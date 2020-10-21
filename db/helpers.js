@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const moment = require("moment");
 
 // initialize env variables
-dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+dotenv.config();
 
 // installation object
 const installationObject = ({

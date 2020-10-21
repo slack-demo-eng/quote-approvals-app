@@ -38,7 +38,7 @@ const {
 } = require("./db/helpers");
 
 // initialize env variables
-dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+dotenv.config();
 
 // intialize app
 const app = new App({
