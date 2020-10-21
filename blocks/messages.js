@@ -302,7 +302,8 @@ module.exports = {
               },
               text: {
                 type: "mrkdwn",
-                text: "All custom configuration will be lost",
+                text:
+                  "All custom configuration will be lost for this workspace. All other workspaces that this app is installed on will keep their custom configuration.",
               },
               confirm: {
                 type: "plain_text",
@@ -650,8 +651,7 @@ module.exports = {
             text: "Configure Approvers :gear:",
             emoji: true,
           },
-          action_id: "take_me_home",
-          url: `slack://app?team=${workspace_id}&id=${app_id}&tab=home`,
+          action_id: "configure_approvers",
         },
       ],
     },
