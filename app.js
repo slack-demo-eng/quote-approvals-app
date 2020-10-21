@@ -158,6 +158,24 @@ app.event("app_home_opened", async ({ body, context, logger }) => {
   }
 });
 
+// listen for configure approvers button click
+app.action("configure_approvers", async ({ ack, body, context, logger }) => {
+  try {
+    await ack();
+    let settings = await fetchUserSettings(
+      body.team.id,
+      body.team.enterprise_id
+    );
+    await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: modals.edit_approvers(settings),
+    });
+  } catch (error) {
+    logger.error(error);
+  }
+});
+
 // listen for edit button click
 app.action(
   /^(edit_approvers|edit_proposed_structure|edit_quote_lines|edit_approver_details|edit_quote_line_details|edit_deal_stats|edit_platform_image|edit_sales_order_form_link).*/,
@@ -165,7 +183,7 @@ app.action(
     try {
       await ack();
       let settings = await fetchUserSettings(
-        body.team.id,
+        body.user.team_id,
         body.team.enterprise_id
       );
 
@@ -306,7 +324,7 @@ app.view(
 app.action("restore_defaults", async ({ ack, body, logger }) => {
   try {
     await ack();
-    const settings = new_user(body.team.id, body.team.enterprise_id);
+    const settings = new_user(body.user.team_id, body.team.enterprise_id);
     return await storeUserSettings(settings);
   } catch (error) {
     logger.error(error);
@@ -314,16 +332,13 @@ app.action("restore_defaults", async ({ ack, body, logger }) => {
 });
 
 // acknowledge no functionality button clicks
-app.action(
-  /take_me_home|uninstall_app|external_link.*/,
-  async ({ ack, logger }) => {
-    try {
-      await ack();
-    } catch (error) {
-      logger.error(error);
-    }
+app.action(/uninstall_app|external_link.*/, async ({ ack, logger }) => {
+  try {
+    await ack();
+  } catch (error) {
+    logger.error(error);
   }
-);
+});
 
 /* LAUNCH 🚀 */
 
@@ -335,7 +350,6 @@ app.command("/discount", async ({ ack, command, context, logger }) => {
       command.team_id,
       command.enterprise_id
     );
-
     const users_configured = isApproversConfigured(settings.approver_users);
 
     // send ephemeral message if approvers not configured
