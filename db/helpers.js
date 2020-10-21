@@ -116,10 +116,8 @@ const fetchInstallationFromDb = async ({ teamId, enterpriseId }) => {
             // return current workspace install
             return resolve(installationObject(result[index]));
           }
-          // return org install if in workspace without install
-          return resolve(installationObject(result[0]));
         }
-        // return workspace install for non-enterprise
+        // return org install if in workspace without install or workspace install for non-enterprise
         return resolve(installationObject(result[0]));
       }
     });
