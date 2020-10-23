@@ -9,6 +9,7 @@ const new_user = (team_id, enterprise_id) => ({
     sales_ops_user: "",
     legal_user: "",
   },
+  channel_type: "private",
   proposed_structure: {
     close_date: `${moment().format("YYYY-MM-DD")}`,
     acv_churn: "$0",

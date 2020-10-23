@@ -124,6 +124,23 @@ const fetchInstallationFromDb = ({ teamId, enterpriseId }) => {
   });
 };
 
+const deleteInstallationFromDb = (teamId) => {
+  let sql = `DELETE FROM ${process.env.DB_TABLE_INSTALLS} WHERE team_id = ? AND app_name = ?`;
+  const inserts = [teamId, process.env.APP_NAME];
+  sql = mysql.format(sql, inserts);
+
+  return new Promise((resolve, reject) => {
+    connection.query(sql, (err, result) => {
+      if (err) {
+        return reject(err);
+      }
+      if (result) {
+        resolve();
+      }
+    });
+  });
+};
+
 const storeUserSettings = (settings) => {
   const jsonPayload = JSON.stringify(settings);
   const enterpriseId = settings.enterprise_id || "NULL";
@@ -185,6 +202,7 @@ const fetchUserSettings = (teamId, enterpriseId) => {
 module.exports = {
   storeInstallationInDb,
   fetchInstallationFromDb,
+  deleteInstallationFromDb,
   storeUserSettings,
   fetchUserSettings,
 };
