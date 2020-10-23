@@ -37,6 +37,7 @@ const installationObject = ({
       "users:read",
       "channels:read",
       "links:read",
+      "groups:write",
     ],
     token: bot_token,
     userId: bot_user_id,
