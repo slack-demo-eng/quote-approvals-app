@@ -1,7 +1,7 @@
 const moment = require("moment");
 
 module.exports = {
-  app_home: {
+  app_home: (channel_type, install_link, isInstalled) => ({
     type: "home",
     blocks: [
       {
@@ -9,6 +9,29 @@ module.exports = {
         text: {
           type: "mrkdwn",
           text: "Welcome to *Quote Approvals* :wave:",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: isInstalled
+            ? `:white_check_mark: *This app is installed on the workspace you are in*`
+            : `:rotating_light: *You won't be able to launch the app in this workspace as it is not installed. Head over to the workspace you initially installed the app in, or install the app to this workspace by clicking <${install_link}|here>*`,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: " ",
         },
       },
       {
@@ -84,6 +107,54 @@ module.exports = {
           },
           action_id: "edit_approvers",
         },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: ":sparkle:   *New Channel Type*",
+        },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "radio_buttons",
+            initial_option:
+              channel_type === "private"
+                ? {
+                    text: {
+                      type: "mrkdwn",
+                      text: "Private - :lock: *quote-approvals-acme-corp*",
+                    },
+                    value: "private",
+                  }
+                : {
+                    text: {
+                      type: "mrkdwn",
+                      text: "Public - :hash: *quote-approvals-acme-corp*",
+                    },
+                    value: "public",
+                  },
+            options: [
+              {
+                text: {
+                  type: "mrkdwn",
+                  text: "Private - :lock: *quote-approvals-acme-corp*",
+                },
+                value: "private",
+              },
+              {
+                text: {
+                  type: "mrkdwn",
+                  text: "Public - :hash: *quote-approvals-acme-corp*",
+                },
+                value: "public",
+              },
+            ],
+            action_id: "edit_channel_type",
+          },
+        ],
       },
       {
         type: "section",
@@ -348,7 +419,7 @@ module.exports = {
         ],
       },
     ],
-  },
+  }),
   channel_created: ({ companyName, channelId }) => [
     {
       type: "section",

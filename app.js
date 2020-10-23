@@ -33,6 +33,7 @@ const {
 const {
   storeInstallationInDb,
   fetchInstallationFromDb,
+  deleteInstallationFromDb,
   storeUserSettings,
   fetchUserSettings,
 } = require("./db/helpers");
@@ -55,6 +56,7 @@ const app = new App({
     "users:read",
     "channels:read",
     "links:read",
+    "groups:write",
   ],
   installerOptions: {
     userScopes: ["channels:history"],
@@ -68,8 +70,15 @@ const app = new App({
       const enterpriseId = installation.enterprise
         ? installation.enterprise.id
         : undefined;
-      const settings = new_user(installation.team.id, enterpriseId);
-      return await storeUserSettings(settings);
+      let settings = await fetchUserSettings(
+        installation.team.id,
+        enterpriseId
+      );
+
+      if (!settings) {
+        const newUserSettings = new_user(installation.team.id, enterpriseId);
+        await storeUserSettings(newUserSettings);
+      }
     },
     fetchInstallation: async ({ teamId, enterpriseId }) => {
       // fetch installation from database
@@ -147,11 +156,26 @@ const sendApprovedMessage = async ({
 // listen for app home tab opened
 app.event("app_home_opened", async ({ body, context, logger }) => {
   try {
+    let settings = await fetchUserSettings(body.team_id, body.enterprise_id);
+
+    if (!settings) {
+      const newUserSettings = new_user(body.team_id, body.enterprise_id);
+      await storeUserSettings(newUserSettings);
+      settings = await fetchUserSettings(body.team_id, body.enterprise_id);
+    }
+
+    // determine if app installed on current workspace
+    const isInstalled = body.team_id === body.authorizations[0].team_id;
+
     // load app home
     await app.client.views.publish({
       token: context.botToken,
       user_id: body.event.user,
-      view: app_home,
+      view: app_home(
+        settings.channel_type,
+        process.env.APP_INSTALL_LINK,
+        isInstalled
+      ),
     });
   } catch (error) {
     logger.error(error);
@@ -182,19 +206,11 @@ app.action(
   async ({ ack, action, body, context, logger }) => {
     try {
       await ack();
+
       let settings = await fetchUserSettings(
         body.user.team_id,
         body.team.enterprise_id
       );
-
-      if (!settings) {
-        const newUserSettings = new_user(body.team.id, body.team.enterprise_id);
-        await storeUserSettings(newUserSettings);
-        settings = await fetchUserSettings(
-          body.team.id,
-          body.team.enterprise_id
-        );
-      }
 
       // push values to edit modal
       await app.client.views.open({
@@ -207,6 +223,23 @@ app.action(
     }
   }
 );
+
+// listen for edit channel type
+app.action("edit_channel_type", async ({ ack, action, body, logger }) => {
+  try {
+    await ack();
+    let settings = await fetchUserSettings(
+      body.user.team_id,
+      body.team.enterprise_id
+    );
+
+    // save new channel type
+    settings.channel_type = action.selected_option.value;
+    await storeUserSettings(settings);
+  } catch (error) {
+    logger.error(error);
+  }
+});
 
 // listen for save of new approver users
 app.view(
@@ -326,6 +359,14 @@ app.action("restore_defaults", async ({ ack, body, logger }) => {
     await ack();
     const settings = new_user(body.user.team_id, body.team.enterprise_id);
     return await storeUserSettings(settings);
+  } catch (error) {
+    logger.error(error);
+  }
+});
+
+app.event("app_uninstalled", async ({ body, logger }) => {
+  try {
+    await deleteInstallationFromDb(body.team_id, body.enterprise_id);
   } catch (error) {
     logger.error(error);
   }
@@ -544,6 +585,11 @@ app.view(
         return;
       }
 
+      const settings = await fetchUserSettings(
+        body.team.id,
+        body.team.enterprise_id
+      );
+
       // create channel
       const response = await app.client.conversations.create({
         token: context.botToken,
@@ -551,12 +597,8 @@ app.view(
           .replace(/\W+/g, "-")
           .toLowerCase()}`,
         team_id: body.team.id,
+        is_private: settings.channel_type === "private",
       });
-
-      const settings = await fetchUserSettings(
-        body.team.id,
-        body.team.enterprise_id
-      );
 
       const {
         l1_user,
