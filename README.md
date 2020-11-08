@@ -23,13 +23,19 @@ The app can be used to demonstrate the power of Slack in coordinating a discount
 
 All of the below `.env` variables are *required* in order for the app to function properly
 
+- `APP_ID`
+- `APP_INSTALL_LINK`
+- `APP_NAME`
+- `DB_DATABASE`
+- `DB_HOST`
+- `DB_PASSWORD`
+- `DB_TABLE_INSTALLS`
+- `DB_TABLE_USER_SETTINGS`
+- `DB_USER`
 - `SLACK_SIGNING_SECRET`
 - `SLACK_CLIENT_ID`
 - `SLACK_CLIENT_SECRET`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_HOST`
-- `DB_DATABASE`
+- `SLACK_STATE_SECRET`
 
 ### :link: Slack App Link
 
