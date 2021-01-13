@@ -178,6 +178,7 @@ app.event("app_home_opened", async ({ body, context, logger }) => {
       ),
     });
   } catch (error) {
+    console.log(`app_home_opened error - TEAM_ID = ${body.team_id}`);
     logger.error(error);
   }
 });
@@ -196,6 +197,7 @@ app.action("configure_approvers", async ({ ack, body, context, logger }) => {
       view: modals.edit_approvers(settings),
     });
   } catch (error) {
+    console.log(`configure_approvers error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -219,6 +221,7 @@ app.action(
         view: modals[action.action_id](settings),
       });
     } catch (error) {
+      console.log(`edit config error - TEAM_ID = ${body.user.team_id}`);
       logger.error(error);
     }
   }
@@ -237,6 +240,7 @@ app.action("edit_channel_type", async ({ ack, action, body, logger }) => {
     settings.channel_type = action.selected_option.value;
     await storeUserSettings(settings);
   } catch (error) {
+    console.log(`edit channel type error - TEAM_ID = ${body.user.team_id}`);
     logger.error(error);
   }
 });
@@ -348,6 +352,7 @@ app.view(
       // store new user settings in database
       await storeUserSettings(settings);
     } catch (error) {
+      console.log(`save config error - TEAM_ID = ${body.team.id}`);
       logger.error(error);
     }
   }
@@ -360,6 +365,7 @@ app.action("restore_defaults", async ({ ack, body, logger }) => {
     const settings = new_user(body.user.team_id, body.team.enterprise_id);
     return await storeUserSettings(settings);
   } catch (error) {
+    console.log(`restore defaults error - TEAM_ID = ${body.user.team_id}`);
     logger.error(error);
   }
 });
@@ -368,15 +374,17 @@ app.event("app_uninstalled", async ({ body, logger }) => {
   try {
     await deleteInstallationFromDb(body.team_id, body.enterprise_id);
   } catch (error) {
+    console.log(`app_uninstalled error - TEAM_ID = ${body.team_id}`);
     logger.error(error);
   }
 });
 
 // acknowledge no functionality button clicks
-app.action(/uninstall_app|external_link.*/, async ({ ack, logger }) => {
+app.action(/uninstall_app|external_link.*/, async ({ ack, body, logger }) => {
   try {
     await ack();
   } catch (error) {
+    console.log(`plain ack error - TEAM_ID = ${body.user.team_id}`);
     logger.error(error);
   }
 });
@@ -414,6 +422,7 @@ app.command("/discount", async ({ ack, command, context, logger }) => {
       view: launch_modal,
     });
   } catch (error) {
+    console.log(`slash command error - TEAM_ID = ${command.team_id}`);
     logger.error(error);
   }
 });
@@ -458,6 +467,7 @@ app.shortcut(
         view: launch_modal,
       });
     } catch (error) {
+      console.log(`shortcut error - TEAM_ID = ${body.team.id}`);
       logger.error(error);
     }
   }
@@ -474,6 +484,7 @@ app.message(/discount/i, async ({ context, message, logger }) => {
       blocks: discount_mention,
     });
   } catch (error) {
+    console.log(`discount listener error - USER = ${message.user}`);
     logger.error(error);
   }
 });
@@ -510,6 +521,7 @@ app.action("launch_discount", async ({ ack, body, context, logger }) => {
       view: launch_modal,
     });
   } catch (error) {
+    console.log(`launch_discount error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -525,6 +537,7 @@ app.action("cancel_ephemeral", async ({ ack, body, logger }) => {
       })
       .catch((error) => logger.error(error));
   } catch (error) {
+    console.log(`cancel_ephemeral error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -649,6 +662,7 @@ app.view(
         }),
       });
     } catch (error) {
+      console.log(`launch_modal_submit error - TEAM_ID = ${body.team.id}`);
       logger.error(error);
     }
   }
@@ -671,6 +685,7 @@ app.action("status_details", async ({ ack, context, body, logger }) => {
       view: approver_details(settings.approver_details),
     });
   } catch (error) {
+    console.log(`status_details error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -690,6 +705,7 @@ app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
       view: quote_line_details(settings.quote_line_details),
     });
   } catch (error) {
+    console.log(`quote_lines_details error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -709,6 +725,7 @@ app.action("deal_stats", async ({ ack, context, body, logger }) => {
       view: deal_stats(settings.deal_stats),
     });
   } catch (error) {
+    console.log(`deal_stats error - TEAM_ID = ${body.team.id}`);
     logger.error(error);
   }
 });
@@ -813,6 +830,7 @@ app.action(
         blocks: discount_approved(companyName, settings.sales_order_form.url),
       });
     } catch (error) {
+      console.log(`approve/reject error - TEAM_ID = ${body.team.id}`);
       logger.error(error);
     }
   }
