@@ -1026,6 +1026,29 @@ module.exports = {
       },
     ],
   },
+  loading: (modal_title) => ({
+    type: "modal",
+    title: {
+      type: "plain_text",
+      text: modal_title,
+      emoji: true,
+    },
+    close: {
+      type: "plain_text",
+      text: "Cancel",
+      emoji: true,
+    },
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "plain_text",
+          text: "Loading...",
+          emoji: true,
+        },
+      },
+    ],
+  }),
   quote_line_details: ({
     product_name,
     quantity,

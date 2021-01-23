@@ -187,13 +187,24 @@ app.event("app_home_opened", async ({ body, context, logger }) => {
 app.action("configure_approvers", async ({ ack, body, context, logger }) => {
   try {
     await ack();
+    // show loading state
+    const res = await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: modals.loading("Approvers"),
+    });
+
+    // fetch user settings
     let settings = await fetchUserSettings(
       body.team.id,
       body.team.enterprise_id
     );
-    await app.client.views.open({
+
+    // push values to edit modal
+    await app.client.views.update({
       token: context.botToken,
-      trigger_id: body.trigger_id,
+      view_id: res.view.id,
+      hash: res.view.hash,
       view: modals.edit_approvers(settings),
     });
   } catch (error) {
@@ -208,16 +219,24 @@ app.action(
   async ({ ack, action, body, context, logger }) => {
     try {
       await ack();
+      // show loading state
+      const res = await app.client.views.open({
+        token: context.botToken,
+        trigger_id: body.trigger_id,
+        view: modals.loading("Configuration"),
+      });
 
+      // fetch user settings
       let settings = await fetchUserSettings(
         body.user.team_id,
         body.team.enterprise_id
       );
 
       // push values to edit modal
-      await app.client.views.open({
+      await app.client.views.update({
         token: context.botToken,
-        trigger_id: body.trigger_id,
+        view_id: res.view.id,
+        hash: res.view.hash,
         view: modals[action.action_id](settings),
       });
     } catch (error) {
@@ -674,14 +693,24 @@ app.view(
 app.action("status_details", async ({ ack, context, body, logger }) => {
   try {
     await ack();
+    // show loading state
+    const res = await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: modals.loading("Approval Details"),
+    });
+
+    // fetch user settings
     const settings = await fetchUserSettings(
       body.team.id,
       body.team.enterprise_id
     );
 
-    await app.client.views.open({
+    // push values to modal
+    await app.client.views.update({
       token: context.botToken,
-      trigger_id: body.trigger_id,
+      view_id: res.view.id,
+      hash: res.view.hash,
       view: approver_details(settings.approver_details),
     });
   } catch (error) {
@@ -694,14 +723,24 @@ app.action("status_details", async ({ ack, context, body, logger }) => {
 app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
   try {
     await ack();
+    // show loading state
+    const res = await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: modals.loading("Quote Line Details"),
+    });
+
+    // fetch user settings
     const settings = await fetchUserSettings(
       body.team.id,
       body.team.enterprise_id
     );
 
-    await app.client.views.open({
+    // push values to modal
+    await app.client.views.update({
       token: context.botToken,
-      trigger_id: body.trigger_id,
+      view_id: res.view.id,
+      hash: res.view.hash,
       view: quote_line_details(settings.quote_line_details),
     });
   } catch (error) {
@@ -714,14 +753,24 @@ app.action("quote_lines_details", async ({ ack, context, body, logger }) => {
 app.action("deal_stats", async ({ ack, context, body, logger }) => {
   try {
     await ack();
+    // show loading state
+    const res = await app.client.views.open({
+      token: context.botToken,
+      trigger_id: body.trigger_id,
+      view: modals.loading("Deal Stats"),
+    });
+
+    // fetch user settings
     const settings = await fetchUserSettings(
       body.team.id,
       body.team.enterprise_id
     );
 
-    await app.client.views.open({
+    // push values to modal
+    await app.client.views.update({
       token: context.botToken,
-      trigger_id: body.trigger_id,
+      view_id: res.view.id,
+      hash: res.view.hash,
       view: deal_stats(settings.deal_stats),
     });
   } catch (error) {
