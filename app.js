@@ -19,6 +19,7 @@ const {
 const {
   app_home,
   channel_exists,
+  private_channel_exists,
   channel_created,
   discount_approved,
   discount_mention,
@@ -681,8 +682,17 @@ app.view(
         }),
       });
     } catch (error) {
-      console.log(`launch_modal_submit error - TEAM_ID = ${body.team.id}`);
-      logger.error(error);
+      if (error.data.error === "name_taken") {
+        // send DM with private channel already exists message
+        await app.client.chat.postMessage({
+          token: context.botToken,
+          channel: body.user.id,
+          blocks: private_channel_exists,
+        });
+      } else {
+        console.log(`launch_modal_submit error - TEAM_ID = ${body.team.id}`);
+        logger.error(error);
+      }
     }
   }
 );
