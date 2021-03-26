@@ -438,6 +438,15 @@ module.exports = {
       },
     },
   ],
+  private_channel_exists: [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `Oops! :open_mouth: It looks like a discount approval has *already been requested* for this company. It's likely a private channel and called something like :lock:*quote-approvals-COMPANY*`,
+      },
+    },
+  ],
   discount_approved: (companyName, url) => [
     {
       type: "section",
