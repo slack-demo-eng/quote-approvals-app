@@ -41,7 +41,7 @@ const {
 } = require("./db/helpers");
 
 // initialize env variables
-dotenv.config({ path: "./.env.dev" });
+dotenv.config();
 
 // intialize app
 const app = new App({
@@ -413,7 +413,7 @@ app.action(/uninstall_app|external_link.*/, async ({ ack, body, logger }) => {
 /* LAUNCH 🚀 */
 
 // listen for slash command
-app.command("/discount_dev", async ({ ack, command, context, logger }) => {
+app.command("/discount", async ({ ack, command, context, logger }) => {
   try {
     await ack();
     const settings = await fetchUserSettings(
