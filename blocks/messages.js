@@ -447,6 +447,15 @@ module.exports = {
       },
     },
   ],
+  org_user_not_in_team: [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `Oops! :open_mouth: It looks like one of the approvers is *not a member of this workspace*. You'll need to make sure all approvers are a part of the workspace that you're trying to launch the discount approval process in.`,
+      },
+    },
+  ],
   discount_approved: (companyName, url) => [
     {
       type: "section",
