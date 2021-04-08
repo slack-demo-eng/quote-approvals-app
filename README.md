@@ -40,7 +40,7 @@ All of the below `.env` variables are _required_ in order for the app to functio
 
 ### Running Locally
 
-Ensure the app is running locally using the following `ngrok` command:
+Create your new branch from the `dev` branch first, and then ensure the app is running locally using the following `ngrok` command:
 
 ```
 ngrok http -subdomain='quote-approvals-dev' 3000
