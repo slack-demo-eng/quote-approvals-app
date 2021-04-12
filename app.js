@@ -24,6 +24,7 @@ const {
   discount_approved,
   discount_mention,
   channel_message,
+  org_user_not_in_team,
   redirect_home,
   thread_approved,
   thread_ask,
@@ -682,16 +683,27 @@ app.view(
         }),
       });
     } catch (error) {
-      if (error.data.error === "name_taken") {
-        // send DM with private channel already exists message
-        await app.client.chat.postMessage({
-          token: context.botToken,
-          channel: body.user.id,
-          blocks: private_channel_exists,
-        });
-      } else {
-        console.log(`launch_modal_submit error - TEAM_ID = ${body.team.id}`);
-        logger.error(error);
+      switch (error.data.error) {
+        case "name_taken":
+          await app.client.chat.postMessage({
+            token: context.botToken,
+            channel: body.user.id,
+            blocks: private_channel_exists,
+          });
+          break;
+
+        case "org_user_not_in_team":
+          await app.client.chat.postMessage({
+            token: context.botToken,
+            channel: body.user.id,
+            blocks: org_user_not_in_team,
+          });
+          break;
+
+        default:
+          console.log(`launch_modal_submit error - TEAM_ID = ${body.team.id}`);
+          logger.error(error);
+          break;
       }
     }
   }

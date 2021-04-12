@@ -8,20 +8,17 @@
 
 For a detailed guide on how to use the app (with GIFs!) please head :point_right: [here](https://docs.google.com/document/d/13CHXzCkpyCMfTeWT7SyCkyn0_Nf-csxsL6TYx2BXp4M/edit?usp=sharing)
 
-
 ## 📃 Description
-
 
 This demo app is based on the [@ApprovalsBot - Deals](https://slack-sales-and-cs.slack.com/apps/ANLSXKXNF-approvalsbot-deals?next_id=0) that currently exists inside of TinySpeck.
 
 The app can be used to demonstrate the power of Slack in coordinating a discount approval process for a potential new customer.
 
-
 ## ⚙️ Setup
 
 ### :earth_americas: ENV Variables
 
-All of the below `.env` variables are *required* in order for the app to function properly
+All of the below `.env` variables are _required_ in order for the app to function properly
 
 - `APP_ID`
 - `APP_INSTALL_LINK`
@@ -41,6 +38,13 @@ All of the below `.env` variables are *required* in order for the app to functio
 
 [Click Here](https://slack-demo-eng.slack.com/apps/A01AJDXR8SJ-quote-approvals?did_revoke_all=1&next_id=0) to view the App Directory page
 
+### Running Locally
+
+Create your new branch from the `dev` branch first, and then ensure the app is running locally using the following `ngrok` command:
+
+```
+ngrok http -subdomain='quote-approvals-dev' 3000
+```
 
 ## :rocket: Deployment
 
